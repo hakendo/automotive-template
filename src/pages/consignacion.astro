@@ -1,0 +1,128 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
+---
+
+<Layout 
+  title="Consigna tu Auto - Automotive Consulting" 
+  description="Vende tu auto de forma segura, rápida y al mejor precio del mercado con nuestro servicio de consignación."
+>
+  <section class="bg-gray-900 py-24 pt-48 text-center text-white">
+    <div class="md:w-7xl mx-auto px-4">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Consigna tu Auto con Nosotros</h1>
+      <p class="text-lg text-gray-300 max-w-3xl mx-auto">
+        Vende tu vehículo de forma segura, rápida y al mejor precio del mercado. Nos encargamos de todo el proceso por ti.
+      </p>
+    </div>
+  </section>
+
+  <main class="bg-white py-20 px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-gray-50 rounded-2xl shadow-lg p-8 md:p-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Ingresa tus datos</h2>
+        <p class="text-gray-600 mb-8">Completa el formulario y uno de nuestros expertos te contactará a la brevedad.</p>
+
+        <form id="contact-form" class="space-y-6">
+          
+          <fieldset class="border-t border-gray-200 pt-6">
+            <legend class="text-lg font-semibold text-gray-800 mb-4">Tus Datos de Contacto</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                <input type="text" id="name" name="name" required placeholder="Tu nombre completo" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+              <div>
+                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Celular (WhatsApp)</label>
+                <input type="tel" id="phone" name="phone" required placeholder="+56 9 1234 5678" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+            </div>
+            <div class="mt-6">
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" id="email" name="email" required placeholder="tu.correo@ejemplo.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+            </div>
+          </fieldset>
+
+          <fieldset class="border-t border-gray-200 pt-6">
+            <legend class="text-lg font-semibold text-gray-800 mb-4">Datos de tu Vehículo</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="car-brand" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                <input type="text" id="car-brand" name="carBrand" required placeholder="Ej: Toyota" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+              <div>
+                <label for="car-model" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                <input type="text" id="car-model" name="carModel" required placeholder="Ej: RAV4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+              <div>
+                <label for="car-year" class="block text-sm font-medium text-gray-700 mb-1">Año</label>
+                <input type="number" id="car-year" name="carYear" required placeholder="Ej: 2022" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+              <div>
+                <label for="car-mileage" class="block text-sm font-medium text-gray-700 mb-1">Kilometraje</label>
+                <input type="number" id="car-mileage" name="carMileage" required placeholder="Ej: 25000" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all" />
+              </div>
+            </div>
+          </fieldset>
+          
+          <div class="h-captcha" data-sitekey={keyHcaptcha}></div>
+          <div id="form-status" class="hidden" aria-live="polite"><p class="text-center font-medium"></p></div>
+          
+          <button type="submit" class="w-full bg-ac-blue hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg">
+            Enviar Solicitud de Consignación
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement;
+  const formStatus = document.getElementById('form-status');
+  const statusText = formStatus?.querySelector('p');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form || !formStatus || !statusText) return;
+
+    const hcaptchaResponse = (window as any).hcaptcha?.getResponse();
+    if (!hcaptchaResponse) {
+      statusText.textContent = 'Por favor, completa la verificación de seguridad.';
+      formStatus.className = 'text-red-700 text-center p-4 bg-red-50 rounded-lg border border-red-200 block';
+      return;
+    }
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data['h-captcha-response'] = hcaptchaResponse;
+
+    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Enviando...';
+    
+    statusText.textContent = 'Enviando tu solicitud...';
+    formStatus.className = 'text-gray-600 text-center p-4 bg-gray-100 rounded-lg block';
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Error en el servidor');
+
+      form.reset();
+      (window as any).hcaptcha?.reset();
+      statusText.textContent = '¡Solicitud enviada con éxito! Te contactaremos pronto.';
+      formStatus.className = 'text-green-700 text-center p-4 bg-green-50 rounded-lg border border-green-200 block';
+    } catch (error) {
+      statusText.textContent = 'Hubo un error al enviar tu solicitud. Por favor, inténtalo de nuevo.';
+      formStatus.className = 'text-red-700 text-center p-4 bg-red-50 rounded-lg border border-red-200 block';
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Enviar Solicitud de Consignación';
+    }
+  });
+</script>

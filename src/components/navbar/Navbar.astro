@@ -1,28 +1,5 @@
 ---
-import Hamburger from "../hamburger-menu/Hamburger.astro";
-
-const currentPath = Astro.url.pathname;
-
-const logo = {
-  src: "/logo-ac-light.webp",
-  alt: "Automotive Consulting",
-  width: 240, 
-  height: 96
-};
-
-const socialLinks = [
-    { 
-        name: "Facebook", 
-        href: "https://web.facebook.com/automotiveconsultingcl",
-        iconClass: "fab fa-facebook-f",
-    },
-    { 
-        name: "Instagram", 
-        href: "https://www.instagram.com/automotive_consulting_cl/",
-        iconClass: "fab fa-instagram",
-    }
-];
-
+// ... (el resto del código superior no cambia)
 const navLinks = [
     { name: "Inicio", href: "/" },
     { name: "Nosotros", href: "/nosotros" },
@@ -30,67 +7,25 @@ const navLinks = [
     { name: "Contacto", href: "/contacto" }
 ];
 ---
-
 <nav class="bg-black fixed w-full top-0 z-50">
   <div class="relative md:w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-24">
-      
-      <div class="flex-shrink-0">
-        <a href="/" class="flex items-center">
-          <img class="h-20 w-auto" src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} />
-        </a>
-      </div>
-
+      {/* ... (código del logo no cambia) ... */}
       <div class="hidden lg:flex items-center space-x-8">
-        <div class="flex items-center space-x-8">
-          {navLinks.map((link) => {
-            const isActive = currentPath === link.href || (link.href === '/catalogo' && currentPath.startsWith('/vehiculos'));
-            return (
-              <a 
-                href={link.href} 
-                class:list={[
-                  "nav-link text-white font-bold px-3 py-2 rounded-md text-sm transition-colors", // <-- Le añadí la clase 'nav-link'
-                  { 'text-ac-blue': isActive } 
-                ]}
-              >
-                {link.name}         
-              </a>
-            )
-          })}
-        </div>
-
+        {/* ... (código de los links de navegación no cambia) ... */}
+        
         <div class="h-6 w-px bg-gray-700"></div>
         
-        <a href="/contacto" class="bg-ac-blue text-white font-bold px-5 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-sm shadow-lg">
+        {/* CAMBIO: El enlace ahora apunta a /consignacion */}
+        <a href="/consignacion" class="bg-ac-blue text-white font-bold px-5 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-sm shadow-lg">
           Consignación
         </a>
 
-        <div class="flex space-x-3">
-          {socialLinks.map((social) => (
-            <a 
-              href={social.href} 
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-gray-400 hover:text-white transition-colors duration-200"
-              aria-label={social.name}
-            >
-              <i class={`${social.iconClass} text-xl`}></i>
-            </a>
-          ))}
-        </div>
+        {/* ... (código de redes sociales y menú móvil no cambia) ... */}
       </div>
-      
-      <div class="lg:hidden">
-        <Hamburger />  
-      </div>
-
     </div>
   </div>
 </nav>
-
-{/* ESTILOS AÑADIDOS PARA FORZAR EL HOVER */}
 <style>
-  a.nav-link:hover {
-    color: #20B3C2; /* Este es tu color ac-blue */
-  }
+  /* ... (los estilos no cambian) ... */
 </style>

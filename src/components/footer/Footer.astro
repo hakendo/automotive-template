@@ -1,15 +1,17 @@
 ---
+// Contenidos actualizados para el footer
 const menuLinks = [
     { name: "Inicio", href: "/" },
     { name: "Nosotros", href: "/nosotros" },
     { name: "Catálogo", href: "/catalogo" },
+    { name: "Consignación", href: "/consignacion" },
     { name: "Contacto", href: "/contacto" }
 ];
 
 const socialLinks = [
     { 
         name: "Facebook", 
-        href: "https://web.facebook.com/automotiveconsultingcl", 
+        href: "https://web.facebook.com/automotiveconsultingcl",
         icon: "fab fa-facebook-f",
         target: "_blank"
     },
@@ -21,20 +23,36 @@ const socialLinks = [
     }
 ];
 
-const contactInfo = [
+const sucursales = [
     {
-        type: "Dirección",
-        value: "Camino El Alba 8760, of 304, Las Condes.",
-        icon: "fas fa-map-marker-alt",
+        name: "Sucursal Las Condes",
+        address: "Camino El Alba 8760, of 304, Santiago, Chile."
     },
     {
-        type: "Teléfono",
+        name: "Sucursal Macul",
+        address: "Auto Park, Av. Departamental 4400, Santiago, Chile."
+    },
+    {
+        name: "Sucursal Viña del Mar",
+        address: "Auto Park, Cam. Internacional 3500, Viña del Mar, Valparaíso, Chile."
+    }
+];
+
+const contactInfo = [
+    {
+        type: "Solange Roco",
         value: "+56 9 7622 5094",
         icon: "fas fa-phone",
         link: "tel:+56976225094",
     },
     {
-        type: "Correo",
+        type: "Yovani Salas",
+        value: "+56 9 8887 8192",
+        icon: "fas fa-phone",
+        link: "tel:+56988878192",
+    },
+    {
+        type: "Correo Principal",
         value: "roco.solange@automotiveconsulting.cl",
         icon: "fas fa-envelope",
         link: "mailto:roco.solange@automotiveconsulting.cl",
@@ -44,9 +62,10 @@ const contactInfo = [
 
 <footer class="bg-gradient-to-b from-black to-gray-900 text-white relative z-1">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    {/* Grid con 4 columnas para acomodar Sucursales */}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
       
-      {/* Columna 1: Logo y Redes Sociales (Contenido Original) */}
+      {/* Columna 1: Logo y Redes Sociales */}
       <div class="space-y-6">
         <a href="/" class="flex items-center space-x-2">
           <img class="h-12 w-auto" src="/logo-ac-light.webp" alt="Automotive Consulting">
@@ -64,7 +83,7 @@ const contactInfo = [
         </div>
       </div>
 
-      {/* Columna 2: Navegación (Contenido Original) */}
+      {/* Columna 2: Navegación */}
       <div>
         <h3 class="text-lg font-semibold mb-6">Navegación</h3>
         <ul class="space-y-3">
@@ -79,7 +98,25 @@ const contactInfo = [
         </ul>
       </div>
 
-      {/* Columna 3: Contacto (Contenido Original) */}
+      {/* Columna 3: Sucursales */}
+      <div>
+        <h3 class="text-lg font-semibold mb-6">Sucursales</h3>
+        <div class="space-y-4">
+          {sucursales.map((sucursal) => (
+            <div class="flex items-start space-x-3">
+              <div class="flex-shrink-0">
+                <i class="fas fa-map-marker-alt text-ac-blue mt-1"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-300">{sucursal.name}</p>
+                <p class="text-gray-400 text-sm">{sucursal.address}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Columna 4: Contacto */}
       <div>
         <h3 class="text-lg font-semibold mb-6">Contacto</h3>
         <div class="space-y-4">
@@ -103,7 +140,7 @@ const contactInfo = [
     {/* Copyright */}
     <div class="border-t border-gray-800 mt-12 pt-6">
       <div class="text-center">
-        <p class="text-gray-400 text-sm">© 2025 Automotive Consulting. Todos los derechos reservados.</p>
+        <p class="text-gray-400 text-sm">© {new Date().getFullYear()} Automotive Consulting. Todos los derechos reservados.</p>
         <p class="text-gray-500 text-xs mt-2">
           Diseño y desarrollo 
           <a href="https://venpu.cl" target="_blank" class="text-ac-blue hover:opacity-80 transition-colors duration-200 font-medium">

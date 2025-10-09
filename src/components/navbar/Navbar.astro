@@ -1,31 +1,98 @@
 ---
-// ... (el resto del código superior no cambia)
+import Hamburger from "../hamburger-menu/Hamburger.astro";
+
+const currentPath = Astro.url.pathname;
+
+const logo = {
+  src: "/logo-ac-light.webp",
+  alt: "Automotive Consulting",
+  width: 240,
+  height: 96
+};
+
+const socialLinks = [
+    {
+        name: "Facebook",
+        href: "https://web.facebook.com/automotiveconsultingcl",
+        iconClass: "fab fa-facebook-f",
+    },
+    {
+        name: "Instagram",
+        href: "https://www.instagram.com/automotive_consulting_cl/",
+        iconClass: "fab fa-instagram",
+    }
+];
+
+// --- MODIFICACIÓN 1: Se agrega el nuevo link "Consignación" al arreglo de navegación ---
 const navLinks = [
     { name: "Inicio", href: "/" },
     { name: "Nosotros", href: "/nosotros" },
     { name: "Catálogo", href: "/catalogo" },
+    { name: "Consignación", href: "/consignacion" }, // <-- AÑADIDO
     { name: "Contacto", href: "/contacto" }
 ];
 ---
+
 <nav class="bg-black fixed w-full top-0 z-50">
   <div class="relative md:w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-24">
-      {/* ... (código del logo no cambia) ... */}
+     
+      <div class="flex-shrink-0">
+        <a href="/" class="flex items-center">
+          <img class="h-20 w-auto" src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} />
+        </a>
+      </div>
+
       <div class="hidden lg:flex items-center space-x-8">
-        {/* ... (código de los links de navegación no cambia) ... */}
-        
+        <div class="flex items-center space-x-8">
+          {navLinks.map((link) => {
+            const isActive = currentPath === link.href || (link.href === '/catalogo' && currentPath.startsWith('/vehiculos'));
+            return (
+              <a
+                href={link.href}
+                class:list={[
+                  "nav-link text-white font-bold px-3 py-2 rounded-md text-sm transition-colors",
+                  { 'text-ac-blue': isActive }
+                ]}
+              >
+                {link.name}
+              </a>
+            )
+          })}
+        </div>
+
         <div class="h-6 w-px bg-gray-700"></div>
-        
-        {/* CAMBIO: El enlace ahora apunta a /consignacion */}
+       
+        {/* --- MODIFICACIÓN 2: El botón ahora apunta a la nueva página de consignación --- */}
         <a href="/consignacion" class="bg-ac-blue text-white font-bold px-5 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-sm shadow-lg">
-          Consignación
+          Vende tu auto
         </a>
 
-        {/* ... (código de redes sociales y menú móvil no cambia) ... */}
+        <div class="flex space-x-3">
+          {socialLinks.map((social) => (
+            <a
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-gray-400 hover:text-white transition-colors duration-200"
+              aria-label={social.name}
+            >
+              <i class={`${social.iconClass} text-xl`}></i>
+            </a>
+          ))}
+        </div>
       </div>
+     
+      <div class="lg:hidden">
+        <Hamburger />
+      </div>
+
     </div>
   </div>
 </nav>
+
 <style>
-  /* ... (los estilos no cambian) ... */
+  a.nav-link:hover {
+    color: #20B3C2; /* Color ac-blue */
+  }
 </style>

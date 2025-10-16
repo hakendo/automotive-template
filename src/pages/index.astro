@@ -1,34 +1,15 @@
----
-
-import Layout from '../layouts/Layout.astro';
-import Hero from '../components/hero-slider/Hero';
-import TextImage from '../components/text-and-image/TextImage.astro';
-import BannerStock from '../components/banner-stock/BannerStock.astro';
-import Brand from '../components/banner-brand/Brand.astro';
-import Testimonials from '../components/testimonials/Testimonials.astro';
-import {FeaturedCars} from '../components/featured-cars/FeaturedCars';
-import wildCard from '../assets/images/wild-cars-mazda.webp';	
-import Services from '../components/service-cars/Services.astro';
----
-
-<Layout title="Automotive Consulting - Compra, venta y consignación de vehículos" description="Compra y vende vehículos con seguridad. Descubre nuestro catálogo y contáctanos para más información." image='/logo-ac.webp'>
-	<Hero client:load/>
-	<FeaturedCars client:load />
-	<!-- <TextImage 
-		title="¿Por qué elegirnos?"
-		subtitle=""
-		description="Confianza, rapidez y flexibilidad. Accede a tasas preferenciales y cuotas adaptadas a tus posibilidades. En AutoLoa, hacemos que comprar o vender tu auto sea simple y seguro."
-		imageUrl={wildCard}
-		imageAlt="Imagen de un coche en exhibición"
-		buttonText="Explorar Vehículos"
-		buttonUrl=""
-		reverse={false}
-	/> -->
-	    <Services />
-	    <BannerStock
-        title="Ver stock completo"
-    />
-	<Testimonials />
-	<Brand />
-	
-</Layout>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estamos Actualizando</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+  <div class="text-center">
+    <p class="text-2xl font-bold">Estamos Trabajando</p>
+    <p class="text-lg mt-2 text-gray-300">Mantención</p>
+  </div>
+</body>
+</html>

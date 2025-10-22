@@ -8,59 +8,53 @@ const resend = new Resend(import.meta.env.RESEND_API_KEY);
 export const POST: APIRoute = async ({ request }) => {
   try {
     const data = await request.json();
-    const { name, email, phone, message, plate, saleType } = data;
+    const { name, email, phone, message, carBrand, carModel, carYear, carMileage } = data;
 
-    // Construir el HTML del correo, incluyendo los campos opcionales si existen
+    const isConsignment = carBrand && carModel;
+    const subject = isConsignment 
+      ? `(Consignación Web) Solicitud de ${name} - ${carBrand} ${carModel}`
+      : `(Contacto Web) Nuevo mensaje de ${name}`;
+
     let htmlContent = `
-      <h2>Nuevo mensaje de contacto sitio web</h2>
+      <h2>${isConsignment ? 'Nueva solicitud de Consignación' : 'Nuevo mensaje de Contacto'}</h2>
       <p><strong>Nombre:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Teléfono:</strong> ${phone}</p>
+      <p><strong>Teléfono (WhatsApp):</strong> ${phone}</p>
     `;
 
-    // Añadir campos opcionales solo si existen
-    if (plate) {
-      htmlContent += `<p><strong>Patente:</strong> ${plate}</p>`;
+    if (isConsignment) {
+      htmlContent += `
+        <h3>Datos del Vehículo</h3>
+        <ul>
+          <li><strong>Marca:</strong> ${carBrand}</li>
+          <li><strong>Modelo:</strong> ${carModel}</li>
+          <li><strong>Año:</strong> ${carYear}</li>
+          <li><strong>Kilometraje:</strong> ${carMileage} km</li>
+        </ul>
+      `;
     }
 
-    if (saleType) {
-      const saleTypeText =
-        saleType === "consignacion" ? "Consignación" : "Venta directa";
-      htmlContent += `<p><strong>Tipo de venta:</strong> ${saleTypeText}</p>`;
+    if (message) {
+      htmlContent += `
+        <p><strong>Mensaje Adicional:</strong></p>
+        <p>${message}</p>
+      `;
     }
-
-    // Añadir el mensaje
-    htmlContent += `
-      <p><strong>Mensaje:</strong></p>
-      <p>${message}</p>
-    `;
 
     const { data: emailData, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: ["roco.solange@automotiveconsulting.cl"],
-      cc: ["maravena@eserp.cl"], // cambiar por el email de la empresa
-      subject: `(Sitio web) Nuevo mensaje de contacto de ${name}`,
+      from: "web@automotiveconsulting.cl",
+      to: ["roco.solange@automotiveconsulting.cl", "salas.yovani@automotiveconsulting.cl"],
+      subject: subject,
       html: htmlContent,
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: error.message }), { status: 400 });
     }
 
-    return new Response(JSON.stringify({ success: true, data: emailData }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ success: true, data: emailData }), { status: 200 });
+
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Error interno del servidor" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: "Error interno del servidor" }), { status: 500 });
   }
 };

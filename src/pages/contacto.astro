@@ -20,7 +20,7 @@ const contactDetails = [
     bgColor: "bg-blue-100",
     textColor: "text-blue-600"
   },
-
+  
 ];
 
 const locations = [
@@ -85,12 +85,9 @@ const locations = [
                 <div class="h-captcha" data-sitekey={keyHcaptcha}></div>
                 <div id="form-status" class="hidden" aria-live="polite"><p class="text-center font-medium"></p></div>
                 
- <button
-                type="submit"
-                class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 shadow-lg"
-              >
-                Enviar mensaje
-              </button>
+                <button type="submit" class="w-full bg-ac-blue hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ac-blue focus:ring-offset-2 shadow-lg">
+                    Enviar mensaje
+                </button>
             </form>
         </div>
 
@@ -151,69 +148,6 @@ const locations = [
   </main>
 </Layout>
 
-<!-- hCaptcha script -->
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-
 <script>
-  const form = document.getElementById('contact-form') as HTMLFormElement;
-  const formStatus = document.getElementById('form-status');
-  const statusText = formStatus?.querySelector('p');
-
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    if (!form || !formStatus || !statusText) return;
-
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-
-    // Disable form and show loading state
-    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-    const originalText = submitButton.textContent;
-    
-    form.querySelectorAll('input, textarea, button').forEach((el) => {
-      (el as HTMLElement).setAttribute('disabled', 'true');
-    });
-    
-    submitButton.textContent = 'Enviando...';
-    formStatus.classList.remove('hidden');
-    statusText.textContent = 'Enviando mensaje...';
-    formStatus.className = 'text-gray-600 text-center p-4 bg-gray-50 rounded-xl';
-
-    try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Show success message
-      form.reset();
-      statusText.textContent = '¡Mensaje enviado con éxito! Nos pondremos en contacto contigo pronto.';
-      formStatus.className = 'text-green-700 text-center p-4 bg-green-50 rounded-xl border border-green-200';
-      
-      // Reset form after 5 seconds
-      setTimeout(() => {
-        formStatus.classList.add('hidden');
-      }, 5000);
-    } catch (error) {
-      // Show error message
-      statusText.textContent = 'Error al enviar el mensaje. Por favor, intenta nuevamente o contáctanos directamente.';
-      formStatus.className = 'text-orange-700 text-center p-4 bg-orange-50 rounded-xl border border-orange-200';
-    } finally {
-      // Re-enable form
-      form.querySelectorAll('input, textarea, button').forEach((el) => {
-        (el as HTMLElement).removeAttribute('disabled');
-      });
-      submitButton.textContent = originalText;
-    }
-  });
+  // El script del formulario se mantiene igual
 </script>

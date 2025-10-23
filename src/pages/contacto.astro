@@ -201,7 +201,7 @@ const locations = [
                 </div>
                 <div class="aspect-w-16 aspect-h-9 bg-gray-200">
                     {/* Renderizado condicional del mapa */}
-                    {loc.mapSrc && loc.mapSrc.startsWith('http') && !loc.mapSrc.includes('URL_DE_EMBED') ? (
+                    {loc.mapSrc && (loc.mapSrc.startsWith('http') || loc.mapSrc.startsWith('www')) && !loc.mapSrc.includes('URL_DE_EMBED') ? (
                          <iframe src={loc.mapSrc} width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title={`Mapa de ${loc.name}`}></iframe>
                      ) : (
                          <div class="w-full h-[300px] flex items-center justify-center bg-gray-100">

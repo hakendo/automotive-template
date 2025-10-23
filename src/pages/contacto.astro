@@ -31,39 +31,69 @@ const locations = [
   <Fragment slot="head">
     {/* Script hCaptcha */}
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    {/* Script onSubmit adaptado de Wildcars + hCaptcha */}
+    {/* Script onSubmit adaptado */}
     <script define:vars={{ keyHcaptcha }}>
       document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('contact-form');
         const formStatus = document.getElementById('form-status');
         const statusText = formStatus?.querySelector('p');
-
-        // Verificar si la clave hCaptcha está presente en el cliente
-        if (!keyHcaptcha) {
-            console.error("Clave hCaptcha (PUBLIC) no disponible.");
-            const captchaContainer = document.querySelector('.h-captcha');
-            if (captchaContainer) captchaContainer.innerHTML = '<p class="text-red-600 text-center font-medium">Error: Falta configuración CAPTCHA.</p>';
-        }
+        const inputs = form?.querySelectorAll('input, textarea');
 
         if (!form || !formStatus || !statusText) {
-            console.error("Error: Elementos del formulario no encontrados (form, formStatus, o statusText).");
-            return; // No adjuntar el listener si falta algo
+            console.error("Error: Elementos del formulario no encontrados.");
+            return;
+        }
+
+        // Validación en tiempo real
+        inputs?.forEach(input => {
+            input.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.validity.valid) {
+                    target.classList.remove('border-red-500');
+                    target.classList.add('border-gray-200');
+                } else {
+                    target.classList.remove('border-gray-200');
+                    target.classList.add('border-red-500');
+                }
+            });
+        });
+
+        // Función para mostrar mensajes de estado
+        function showStatus(message, type = 'info') {
+            formStatus.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'bg-gray-100');
+            statusText.classList.remove('text-green-600', 'text-red-600', 'text-gray-600');
+            
+            if (type === 'success') {
+                formStatus.classList.add('bg-green-100');
+                statusText.classList.add('text-green-600');
+            } else if (type === 'error') {
+                formStatus.classList.add('bg-red-100');
+                statusText.classList.add('text-red-600');
+            } else {
+                formStatus.classList.add('bg-gray-100');
+                statusText.classList.add('text-gray-600');
+            }
+            
+            statusText.textContent = message;
         }
 
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
 
-          const hc = typeof window.hcaptcha !== 'undefined' ? window.hcaptcha : null;
-          if (!hc) {
-            console.error("Error: hCaptcha no cargado.");
-            statusText.textContent = 'Error: El sistema CAPTCHA no cargó. Refresca la página.';
-            formStatus.classList.remove('hidden');
-            formStatus.className = 'mt-4 text-center font-medium text-red-600';
-            return;
+          // Validar formulario nativo
+          if (!form.checkValidity()) {
+              showStatus('Por favor, completa todos los campos correctamente.', 'error');
+              return;
           }
 
-          // 1. Obtener token hCaptcha
-          const hcaptchaResponse = hc.getResponse();
+          // Obtener respuesta de hCaptcha
+          const hcaptchaResponse = window.hcaptcha?.getResponse();
+          
+          if (!hcaptchaResponse) {
+              showStatus('Por favor, completa la verificación de seguridad.', 'error');
+              return;
+          }
+
           if (!hcaptchaResponse) {
             formStatus.classList.remove('hidden');
             statusText.textContent = 'Por favor, completa la verificación de seguridad.';
@@ -78,9 +108,9 @@ const locations = [
 
           // 3. Deshabilitar formulario
           const submitButton = form.querySelector('button[type="submit"]');
-          const originalText = submitButton.textContent;
+          const originalText = submitButton ? submitButton.textContent : '';
           form.querySelectorAll('input, textarea, button').forEach(el => el.setAttribute('disabled', 'true'));
-          submitButton.textContent = 'Enviando...';
+          if (submitButton) submitButton.textContent = 'Enviando...';
           formStatus.classList.remove('hidden');
           statusText.textContent = 'Enviando mensaje...';
           statusText.className = 'mt-4 text-center font-medium text-gray-600';
@@ -93,29 +123,35 @@ const locations = [
               body: JSON.stringify(data),
             });
 
-            const result = await response.json();
+            const result = await response.json().catch(() => ({ 
+                success: false, 
+                message: 'Respuesta inválida del servidor.' 
+            }));
 
             if (!response.ok || result.success === false) {
-              throw new Error(result.message || `Error del servidor (${response.status})`);
+                throw new Error(result.message || `Error del servidor (${response.status})`);
             }
 
             // Éxito
             form.reset();
-            hc.reset();
-            statusText.textContent = '¡Mensaje enviado con éxito!';
-            statusText.className = 'mt-4 text-center font-medium text-green-600';
-            setTimeout(() => formStatus.classList.add('hidden'), 5000);
+            window.hcaptcha?.reset();
+            showStatus('¡Mensaje enviado con éxito! Te contactaremos pronto.', 'success');
+            
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                formStatus.classList.add('hidden');
+            }, 5000);
 
           } catch (error) {
             // Error
-            hc.reset();
+            try { if (widgetId !== undefined) hc.reset(widgetId); else hc.reset(); } catch (e) { /* ignore */ }
             console.error("Error al enviar formulario:", error);
             statusText.textContent = `Error: ${error.message || 'Intenta nuevamente.'}`;
             statusText.className = 'mt-4 text-center font-medium text-red-600';
           } finally {
             // Habilitar
             form.querySelectorAll('input, textarea, button').forEach(el => el.removeAttribute('disabled'));
-            submitButton.textContent = originalText;
+            if (submitButton) submitButton.textContent = originalText;
           }
         });
       });
@@ -139,23 +175,79 @@ const locations = [
           <h2 class="text-3xl font-bold text-gray-900 mb-6">Envíanos un mensaje</h2>
           <form id="contact-form" class="space-y-6">
              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div> <label for="name" class="block text-sm font-semibold text-gray-900 mb-2">Nombre</label> <input type="text" id="name" name="name" required placeholder="Tu nombre" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all"/> </div>
-                <div> <label for="phone" class="block text-sm font-semibold text-gray-900 mb-2">Teléfono</label> <input type="tel" id="phone" name="phone" required placeholder="+56 9 1234 5678" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all"/> </div>
+                <div>
+                    <label for="name" class="block text-sm font-semibold text-gray-900 mb-2">Nombre</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        required 
+                        minlength="2"
+                        pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
+                        placeholder="Tu nombre completo" 
+                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
+                    />
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-semibold text-gray-900 mb-2">Teléfono</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        required 
+                        pattern="[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}"
+                        placeholder="+56 9 1234 5678" 
+                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
+                    />
+                </div>
              </div>
-             <div> <label for="email" class="block text-sm font-semibold text-gray-900 mb-2">Email</label> <input type="email" id="email" name="email" required placeholder="tu@email.com" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all"/> </div>
-             <div> <label for="message" class="block text-sm font-semibold text-gray-900 mb-2">Mensaje</label> <textarea id="message" name="message" rows="5" required placeholder="Escribe tu mensaje..." class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ac-blue transition-all resize-none"></textarea> </div>
+             <div>
+                <label for="email" class="block text-sm font-semibold text-gray-900 mb-2">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                    placeholder="tu@email.com" 
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
+                />
+             </div>
+             <div>
+                <label for="message" class="block text-sm font-semibold text-gray-900 mb-2">Mensaje</label>
+                <textarea 
+                    id="message" 
+                    name="message" 
+                    rows="5" 
+                    required 
+                    minlength="10"
+                    maxlength="1000"
+                    placeholder="Escribe tu mensaje..." 
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all resize-none"
+                ></textarea>
+             </div>
 
             {/* Widget hCaptcha */}
-            {keyHcaptcha ? (
-                <div class="flex justify-center md:justify-start">
-                    <div class="h-captcha" data-sitekey={keyHcaptcha}></div>
-                </div>
-             ) : ( <p class="text-red-600 text-center font-medium">Error: CAPTCHA no configurado.</p> )
-            }
+            <div class="w-full">
+              <div class="flex justify-center w-full" id="captcha-container">
+                {keyHcaptcha ? (
+                  <div 
+                    class="h-captcha" 
+                    data-sitekey={keyHcaptcha}
+                    data-theme="light"
+                    data-size="normal"
+                  ></div>
+                ) : (
+                  <p class="text-red-600 text-center font-medium">Error: CAPTCHA no configurado.</p>
+                )}
+              </div>
+            </div>
             {/* Mensaje de Estado */}
-            <div id="form-status" class="hidden mt-4" aria-live="polite"><p class="text-center font-medium"></p></div>
+            <div id="form-status" class="hidden mt-4 p-4 rounded-lg" aria-live="polite">
+              <p class="text-center font-medium"></p>
+            </div>
             {/* Botón Submit (color original ac-blue) */}
-            <button type="submit" class="w-full bg-ac-blue hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ac-blue focus:ring-offset-2 shadow-lg disabled:opacity-50">
+            <button type="submit" class="w-full bg-[#00B4D8] hover:bg-[#0096c7] text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#00B4D8] focus:ring-offset-2 shadow-lg disabled:opacity-50">
               Enviar mensaje
             </button>
           </form>

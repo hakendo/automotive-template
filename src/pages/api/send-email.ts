@@ -82,23 +82,27 @@ export const POST: APIRoute = async ({ request }) => {
     const emailSubject = `Nuevo Contacto Web - Automotive Consulting`;
     let htmlContent = `<h1>Nuevo mensaje de contacto sitio web</h1><p><strong>Nombre:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>${phone ? `<p><strong>Teléfono:</strong> ${phone}</p>` : ''}<hr><p><strong>Mensaje:</strong></p><p>${message.replace(/\n/g, '<br>')}</p>`;
 
-    console.log("Intentando enviar correo a:", recipientEmail);
-    const { data: emailData, error: sendError } = await resend.emails.send({
-      from: "Web Automotive Consulting <onboarding@resend.dev>",
-      to: [recipientEmail],
-      cc: [ccEmail],
-      subject: emailSubject,
-      html: htmlContent,
-      headers: { 'Reply-To': email }
-    });
+        console.log("Intentando enviar correo a:", recipientEmail);
+        // El SDK de Resend puede devolver la respuesta directamente o lanzar excepción.
+        let sendResult: any;
+        try {
+            sendResult = await resend.emails.send({
+                from: "Web Automotive Consulting <onboarding@resend.dev>",
+                to: [recipientEmail],
+                cc: [ccEmail],
+                subject: emailSubject,
+                html: htmlContent,
+                headers: { 'Reply-To': email }
+            });
+        } catch (err) {
+            console.error("Resend SDK error:", err);
+            const msg = (err as any)?.message || 'Hubo un problema al enviar tu mensaje.';
+            return new Response(JSON.stringify({ success: false, message: msg }), { status: 500, headers: { "Content-Type": "application/json" } });
+        }
 
-    if (sendError) {
-       console.error("Resend Error:", sendError);
-       const resendErrorMessage = (sendError as any)?.message || "Hubo un problema al enviar tu mensaje.";
-       return new Response(JSON.stringify({ success: false, message: resendErrorMessage }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
-
-    console.log('Correo enviado con éxito, ID:', emailData?.id);
+        // Normalizar respuesta
+        const emailId = sendResult?.id ?? (sendResult?.data?.id ?? null);
+        console.log('Correo enviado con éxito, ID:', emailId);
     return new Response(JSON.stringify({ success: true, message: 'Mensaje enviado con éxito.' }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

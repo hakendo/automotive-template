@@ -80,7 +80,8 @@ Crea un archivo `.env` en la raíz del proyecto:
 RESEND_API_KEY="tu_resend_api_key_aqui"
 
 # 🛡️ Configuración de hCaptcha (anti-spam)
-HCAPTCHA_SITE_KEY="tu_hcaptcha_site_key_aqui"
+PUBLIC_HCAPTCHA_SITE_KEY="tu_hcaptcha_site_key_publico"
+HCAPTCHA_SECRET_KEY="tu_hcaptcha_secret_key_privado"
 
 # 🔑 Token de API (para datos de vehículos)
 PUBLIC_TOKEN="tu_public_token_aqui"
@@ -167,11 +168,11 @@ wildcars/
 - **Obtener**: [Resend Dashboard](https://resend.com/api-keys)
 - **Formato**: `re_xxxxxxxxxx`
 
-### **HCAPTCHA_SITE_KEY**
+### **PUBLIC_HCAPTCHA_SITE_KEY / HCAPTCHA_SECRET_KEY**
 
-- **Propósito**: Protección anti-spam en formularios
+- **Propósito**: Clave pública para renderizar el widget y clave secreta para verificar tokens server-side
 - **Obtener**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/sites)
-- **Formato**: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+- **Formato**: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (site) y `0x...` (secret)
 
 ### **PUBLIC_TOKEN**
 

@@ -1,333 +1,397 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-// Clave del sitio hCaptcha
-const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
+const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? "";
 if (!keyHcaptcha) {
-    console.warn("Advertencia: Clave hCaptcha (PUBLIC_HCAPTCHA_SITE_KEY) no configurada.");
+  console.warn("Advertencia: PUBLIC_HCAPTCHA_SITE_KEY no configurada.");
 }
 
-// Tus datos de Automotive Consulting (se mantienen)
-const contactDetails = [
-  { icon: "fas fa-phone-alt", title: "Llámanos", value: "+56 9 7622 5094", href: "tel:+56976225094", bgColor: "bg-yellow-100", textColor: "text-yellow-600" },
-  { icon: "fas fa-envelope", title: "Solange Roco", value: "roco.solange@automotiveconsulting.cl", href: "mailto:roco.solange@automotiveconsulting.cl", bgColor: "bg-blue-100", textColor: "text-blue-600" },
+const contactChannels = [
+  {
+    title: "Llámanos",
+    description: "Resolveremos tus preguntas de lunes a viernes.",
+    value: "+56 9 7622 5094",
+    href: "tel:+56976225094",
+    icon: "fas fa-phone-alt",
+  },
+  {
+    title: "Escríbenos",
+    description: "Responderemos tu consulta en menos de un día hábil.",
+    value: "roco.solange@automotiveconsulting.cl",
+    href: "mailto:roco.solange@automotiveconsulting.cl",
+    icon: "fas fa-envelope",
+  },
+  {
+    title: "WhatsApp",
+    description: "Atención directa y seguimiento en vivo.",
+    value: "+56 9 7622 5094",
+    href: "https://wa.me/56976225094",
+    icon: "fab fa-whatsapp",
+  },
 ];
-const locations = [
-    // --- IMPORTANTE: Reemplaza estas URLs con las URLs de Embed correctas de Google Maps ---
-    // 1. Ve a Google Maps, busca la dirección.
-    // 2. Haz clic en "Compartir" > "Insertar un mapa".
-    // 3. Copia la URL que está DENTRO del atributo src="..." y pégala aquí.
-    { name: "Sucursal Las Condes", address: "Camino El Alba 8760, of 304, Santiago, Chile.", mapSrc: "URL_DE_EMBED_GOOGLE_MAPS_LAS_CONDES" }, // <-- PEGA AQUÍ LA URL SRC DEL IFRAME
-    { name: "Sucursal Macul", address: "Auto Park, Av. Departamental 4400, Santiago, Chile.", mapSrc: "URL_DE_EMBED_GOOGLE_MAPS_MACUL" }, // <-- PEGA AQUÍ LA URL SRC DEL IFRAME
-    { name: "Sucursal Viña del Mar", address: "Auto Park, Cam. Internacional 3500, Viña del Mar, Valparaíso, Chile.", mapSrc: "URL_DE_EMBED_GOOGLE_MAPS_VINA" } // <-- PEGA AQUÍ LA URL SRC DEL IFRAME
-]
+
+const officeLocations = [
+  {
+    name: "Las Condes",
+    address: "Camino el Alba 8760, Oficina 304",
+    mapUrl:
+      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3328.357728379575!2d-70.54422302456122!3d-33.45984497338318!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662cf1d36e4c7ed%3A0xbb5f9f4829b69f64!2sCam.%20El%20Alba%208760%2C%20Las%20Condes%2C%20Regi%C3%B3n%20Metropolitana%2C%20Chile!5e0!3m2!1ses-419!2scl!4v1730400000000!5m2!1ses-419!2scl",
+  },
+  {
+    name: "Macul",
+    address: "Auto Park, Av. Departamental 4400",
+    mapUrl:
+      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3331.122931836431!2d-70.59326312456411!3d-33.393758972863955!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662cff1b982d7db%3A0x963c27d9c95605b4!2sAv.%20Departamental%204400%2C%20Macul%2C%20Regi%C3%B3n%20Metropolitana%2C%20Chile!5e0!3m2!1ses-419!2scl!4v1730400000001!5m2!1ses-419!2scl",
+  },
+  {
+    name: "Viña del Mar",
+    address: "Auto Park, Camino Internacional 3500",
+    mapUrl:
+      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3332.974939073879!2d-71.54062702456599!3d-33.34842647251844!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9689debf5d61c0ff%3A0x9ed0b9b0f2745078!2sCam.%20Internacional%203500%2C%20Vi%C3%B1a%20del%20Mar%2C%20Valpara%C3%ADso%2C%20Chile!5e0!3m2!1ses-419!2scl!4v1730400000002!5m2!1ses-419!2scl",
+  },
+];
+
+const faqs = [
+  {
+    question: "¿Cuánto tardan en responder los correos?",
+    answer: "Respondemos en menos de 24 horas hábiles y priorizamos los mensajes con teléfono para coordinar un llamado.",
+  },
+  {
+    question: "¿Puedo agendar una reunión presencial?",
+    answer: "Sí, deja tu mensaje con el horario ideal y confirmaremos la visita en cualquiera de nuestras sucursales.",
+  },
+  {
+    question: "¿Necesito adjuntar documentación?",
+    answer: "No es obligatorio en esta etapa. Tras recibir tu mensaje te indicaremos los documentos requeridos.",
+  },
+];
 ---
 
 <Layout
-  title="Contacto - Automotive Consulting"
-  description="Escríbenos si tienes alguna duda o si quieres vender tu automovil de forma segura y confiable."
+  title="Contacto | Automotive Consulting"
+  description="Envíanos tus dudas o cotiza la venta de tu vehículo con el equipo experto de Automotive Consulting."
   image="/image-service-01.webp"
 >
   <Fragment slot="head">
-    {/* Script para manejar envío y validaciones del formulario */}
+    <script src="https://js.hcaptcha.com/1/api.js?render=explicit" async defer></script>
     <script define:vars={{ keyHcaptcha }}>
-      const HCAPTCHA_SRC = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-
-      function loadHcaptcha() {
-        if (window.hcaptcha) {
-          return Promise.resolve(window.hcaptcha);
-        }
-
-        const existingScript = document.querySelector('script[data-hcaptcha-loader="true"]');
-        if (existingScript) {
-          return new Promise((resolve, reject) => {
-            existingScript.addEventListener('load', () => {
-              if (window.hcaptcha) {
-                resolve(window.hcaptcha);
-              } else {
-                reject(new Error('hCaptcha failed to initialize after load event.'));
-              }
-            });
-            existingScript.addEventListener('error', () => reject(new Error('Failed to load hCaptcha script')));
-          });
-        }
-
+      const loadHcaptcha = () => {
+        if (window.hcaptcha) return Promise.resolve(window.hcaptcha);
         return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = HCAPTCHA_SRC;
+          const script = document.createElement("script");
+          script.src = "https://js.hcaptcha.com/1/api.js?render=explicit";
           script.async = true;
           script.defer = true;
-          script.dataset.hcaptchaLoader = 'true';
-
-          script.onload = () => {
-            if (window.hcaptcha) {
-              resolve(window.hcaptcha);
-            } else {
-              reject(new Error('hCaptcha failed to load'));
-            }
-          };
-
-          script.onerror = () => reject(new Error('Failed to load hCaptcha script'));
-
+          script.onload = () =>
+            window.hcaptcha ? resolve(window.hcaptcha) : reject(new Error("hCaptcha no disponible"));
+          script.onerror = () => reject(new Error("No se pudo cargar hCaptcha"));
           document.head.appendChild(script);
         });
-      }
+      };
 
-      document.addEventListener('DOMContentLoaded', async () => {
-        const form = document.getElementById('contact-form');
-        const formStatus = document.getElementById('form-status');
-        const statusText = formStatus?.querySelector('p');
-        const captchaContainer = document.getElementById('captcha-container');
+      const setStatus = (wrapper, textNode, message, type) => {
+        const backgrounds = ["bg-blue-50", "bg-green-50", "bg-red-50"];
+        const colors = ["text-blue-700", "text-green-700", "text-red-700"];
+        wrapper.classList.remove("hidden", ...backgrounds);
+        textNode.classList.remove(...colors);
+        if (type === "info") {
+          wrapper.classList.add("bg-blue-50");
+          textNode.classList.add("text-blue-700");
+        } else if (type === "success") {
+          wrapper.classList.add("bg-green-50");
+          textNode.classList.add("text-green-700");
+        } else {
+          wrapper.classList.add("bg-red-50");
+          textNode.classList.add("text-red-700");
+        }
+        textNode.textContent = message;
+      };
 
-        if (!form || !formStatus || !statusText || !captchaContainer) {
-          console.error('Error: Elementos del formulario no encontrados.');
+      document.addEventListener("DOMContentLoaded", async () => {
+        const form = document.getElementById("contact-form");
+        const statusBox = document.getElementById("form-status");
+        const statusText = statusBox?.querySelector("p") ?? null;
+        const captchaContainer = document.getElementById("captcha-container");
+        if (!form || !statusBox || !statusText || !captchaContainer) {
+          console.error("Formulario de contacto no disponible.");
           return;
         }
 
-        let hcaptchaWidgetId = null;
+        const params = new URLSearchParams(window.location.search);
+        params.forEach((value, key) => {
+          const input = form.querySelector(`[name="${key}"]`);
+          if (input) input.value = value;
+        });
 
-        function disableFormControls(disabled) {
-          form.querySelectorAll('input, textarea, button').forEach((el) => {
-            if (disabled) {
-              el.setAttribute('disabled', 'true');
-            } else {
-              el.removeAttribute('disabled');
-            }
-          });
-        }
-
-        function showStatus(message, type = 'info') {
-          if (!formStatus || !statusText) return;
-
-          formStatus.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
-          statusText.classList.remove('text-green-600', 'text-red-600', 'text-blue-600');
-
-          const bgClass = type === 'success' ? 'bg-green-100' : type === 'error' ? 'bg-red-100' : 'bg-blue-100';
-          const textClass = type === 'success' ? 'text-green-600' : type === 'error' ? 'text-red-600' : 'text-blue-600';
-
-          formStatus.classList.add(bgClass);
-          statusText.classList.add(textClass);
-          statusText.textContent = message;
-        }
-
-        if (!keyHcaptcha) {
-          console.error('Error: Falta la clave pública de hCaptcha (PUBLIC_HCAPTCHA_SITE_KEY).');
-          disableFormControls(true);
-          showStatus('No se pudo cargar la verificación de seguridad. Intenta nuevamente más tarde.', 'error');
-          return;
-        }
-
+        let widgetId = null;
         try {
           const hcaptcha = await loadHcaptcha();
-          hcaptchaWidgetId = hcaptcha.render(captchaContainer, {
+          widgetId = hcaptcha.render(captchaContainer, {
             sitekey: keyHcaptcha,
-            theme: 'light',
-            size: 'normal'
+            theme: "light",
+            size: "normal",
           });
         } catch (error) {
-          console.error('Error loading hCaptcha:', error);
-          captchaContainer.innerHTML = '<p class="text-red-600 text-center">Error al cargar el captcha. Por favor, recarga la página.</p>';
+          captchaContainer.innerHTML =
+            '<p class="text-sm text-red-600 text-center">No pudimos cargar el captcha, recarga la página.</p>';
+          console.error(error);
           return;
         }
 
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
           if (!form.checkValidity()) {
-            form.reportValidity();
-            showStatus('Por favor, completa todos los campos correctamente.', 'error');
+            setStatus(statusBox, statusText, "Revisa que todos los campos estén completos.", "error");
             return;
           }
 
-          const hcaptchaResponse = window.hcaptcha?.getResponse(hcaptchaWidgetId ?? undefined);
-          if (!hcaptchaResponse) {
-            showStatus('Por favor, completa la verificación de seguridad.', 'error');
+          const response = widgetId !== null ? window.hcaptcha?.getResponse(widgetId) : null;
+          if (!response) {
+            setStatus(statusBox, statusText, "Confirma que no eres un robot para continuar.", "error");
             return;
           }
 
           const formData = new FormData(form);
           const payload = Object.fromEntries(formData.entries());
-          payload['h-captcha-response'] = hcaptchaResponse;
+          payload["h-captcha-response"] = response;
 
           const submitButton = form.querySelector('button[type="submit"]');
-          const originalText = submitButton ? submitButton.textContent : '';
-          disableFormControls(true);
-          if (submitButton) submitButton.textContent = 'Enviando...';
-          showStatus('Enviando mensaje...', 'info');
+          const originalText = submitButton?.textContent ?? "";
+          form.querySelectorAll("input, textarea, button").forEach((element) => element.setAttribute("disabled", "true"));
+          if (submitButton) submitButton.textContent = "Enviando...";
+          setStatus(statusBox, statusText, "Enviando tu mensaje...", "info");
 
           try {
-            const fetchResponse = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+            const result = await fetch("/api/send-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
             });
 
-            const result = await fetchResponse.json().catch(() => ({ success: false, message: 'Respuesta inválida del servidor.' }));
-
-            if (!fetchResponse.ok || !result.success) {
-              throw new Error(result.message || `Error del servidor (${fetchResponse.status})`);
-            }
+            const body = await result.json().catch(() => ({ success: false, message: "Respuesta inválida del servidor." }));
+            if (!result.ok || body.success === false) throw new Error(body.message ?? "No se pudo enviar el correo.");
 
             form.reset();
-            if (typeof window.hcaptcha?.reset === 'function') {
-              window.hcaptcha.reset(hcaptchaWidgetId ?? undefined);
-            }
-            showStatus('¡Mensaje enviado con éxito! Te contactaremos pronto.', 'success');
-            setTimeout(() => {
-              formStatus.classList.add('hidden');
-            }, 5000);
-          } catch (error) {
-            console.error('Error al enviar formulario:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Intenta nuevamente.';
-            showStatus(`Error: ${errorMessage}`, 'error');
+            if (widgetId !== null) window.hcaptcha?.reset(widgetId);
+            setStatus(statusBox, statusText, "Recibimos tu mensaje, te contactaremos pronto.", "success");
+            setTimeout(() => statusBox.classList.add("hidden"), 6000);
+          } catch (err) {
+            console.error(err);
+            setStatus(statusBox, statusText, err instanceof Error ? err.message : "Intenta nuevamente en unos minutos.", "error");
+            if (widgetId !== null) window.hcaptcha?.reset(widgetId);
           } finally {
-            disableFormControls(false);
+            form.querySelectorAll("input, textarea, button").forEach((element) => element.removeAttribute("disabled"));
             if (submitButton) submitButton.textContent = originalText;
           }
         });
       });
     </script>
   </Fragment>
-  
-  <section class="bg-white py-24 pt-48">
-    <div class="md:w-7xl mx-auto px-4 text-center">
-      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Hablemos</h1>
-      <p class="text-lg text-gray-600 max-w-3xl mx-auto">
-        Escríbenos si tienes alguna duda o si quieres vender tu automóvil de forma segura y confiable con nosotros.
-      </p>
+
+  <section class="bg-gray-900 text-white py-24">
+    <div class="max-w-6xl mx-auto px-6 lg:px-10 grid gap-12 lg:grid-cols-2 items-center">
+      <div>
+        <p class="uppercase tracking-[0.35em] text-xs text-gray-400 mb-4">Contacto</p>
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">Hablemos de tu próximo automóvil o venta segura.</h1>
+        <p class="text-lg text-gray-200">
+          Completa el formulario y uno de nuestros especialistas se comunicará contigo para ayudarte a vender o comprar tu
+          próximo vehículo premium.
+        </p>
+        <div class="mt-10 flex flex-wrap gap-6 text-sm text-gray-300">
+          <div>
+            <p class="font-semibold text-white">Horario</p>
+            <p>Lunes a Viernes, 09:00 - 19:00 hrs</p>
+          </div>
+          <div>
+            <p class="font-semibold text-white">Atención preferente</p>
+            <p>Respuestas en &lt; 24 hrs hábiles</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-800/50 border border-gray-700/60 rounded-2xl p-8 shadow-2xl">
+        <p class="text-sm uppercase tracking-widest text-gray-400 mb-4">Datos directos</p>
+        <div class="space-y-6">
+          <a href="tel:+56976225094" class="flex items-center gap-4 group">
+            <span class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl text-teal-300 group-hover:bg-white/20 transition">
+              <i class="fas fa-phone"></i>
+            </span>
+            <div>
+              <p class="text-xs uppercase tracking-widest text-gray-400">Central</p>
+              <p class="text-xl font-semibold group-hover:text-white transition">+56 9 7622 5094</p>
+            </div>
+          </a>
+          <a href="mailto:roco.solange@automotiveconsulting.cl" class="flex items-center gap-4 group">
+            <span class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl text-teal-300 group-hover:bg-white/20 transition">
+              <i class="fas fa-envelope"></i>
+            </span>
+            <div>
+              <p class="text-xs uppercase tracking-widest text-gray-400">Correo</p>
+              <p class="text-xl font-semibold group-hover:text-white transition">roco.solange@automotiveconsulting.cl</p>
+            </div>
+          </a>
+          <a href="https://wa.me/56976225094" target="_blank" rel="noreferrer noopener" class="flex items-center gap-4 group">
+            <span class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl text-teal-300 group-hover:bg-white/20 transition">
+              <i class="fab fa-whatsapp"></i>
+            </span>
+            <div>
+              <p class="text-xs uppercase tracking-widest text-gray-400">WhatsApp</p>
+              <p class="text-xl font-semibold group-hover:text-white transition">Chat inmediato</p>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 
-  <main class="bg-gray-50 py-16 px-4">
-    <div class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-20">
-        {/* --- Columna Izquierda: Formulario --- */}
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-8 md:p-12">
-          <h2 class="text-3xl font-bold text-gray-900 mb-6">Envíanos un mensaje</h2>
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-6 lg:px-10">
+      <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="bg-white rounded-3xl shadow-xl p-8 md:p-10 border border-gray-100">
+          <div class="mb-10">
+            <p class="text-sm uppercase text-gray-500 tracking-[0.45em]">Escríbenos</p>
+            <h2 class="text-3xl md:text-4xl font-semibold text-gray-900 mt-3">Cuéntanos qué necesitas</h2>
+            <p class="text-gray-600 mt-4">
+              Los campos son obligatorios y protegidos con hCaptcha para evitar spam.
+            </p>
+          </div>
           <form id="contact-form" class="space-y-6">
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="name" class="block text-sm font-semibold text-gray-900 mb-2">Nombre</label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        required 
-                        minlength="2"
-                        placeholder="Tu nombre completo" 
-                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
-                    />
-                </div>
-                <div>
-                    <label for="phone" class="block text-sm font-semibold text-gray-900 mb-2">Teléfono</label>
-                    <input 
-                        type="tel" 
-                        id="phone" 
-                        name="phone" 
-                        required 
-                        placeholder="+56 9 1234 5678" 
-                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
-                    />
-                </div>
-             </div>
-             <div>
-                <label for="email" class="block text-sm font-semibold text-gray-900 mb-2">Email</label>
-                    <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required 
-                    placeholder="tu@email.com" 
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all"
+            <div class="grid gap-6 md:grid-cols-2">
+              <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
+                Nombre completo
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  minlength="2"
+                  autocomplete="name"
+                  placeholder="Ej. Catalina Gómez"
+                  class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                 />
-             </div>
-             <div>
-                <label for="message" class="block text-sm font-semibold text-gray-900 mb-2">Mensaje</label>
-                <textarea 
-                    id="message" 
-                    name="message" 
-                    rows="5" 
-                    required 
-                    minlength="10"
-                    maxlength="1000"
-                    placeholder="Escribe tu mensaje..." 
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8] transition-all resize-none"
-                ></textarea>
-             </div>
+              </label>
+              <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
+                Teléfono
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  autocomplete="tel"
+                  placeholder="+56 9 1234 5678"
+                  class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                />
+              </label>
+            </div>
+            <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
+              Correo electrónico
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="nombre@empresa.cl"
+                class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
+              Mensaje
+              <textarea
+                name="message"
+                rows="5"
+                required
+                minlength="10"
+                maxlength="1200"
+                placeholder="Cuéntanos cómo podemos ayudarte"
+                class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:ring-2 focus:ring-teal-400 focus:border-transparent transition resize-none"
+              ></textarea>
+            </label>
 
-            {/* Widget hCaptcha */}
-            <div class="w-full">
-              <div class="flex justify-center w-full" id="captcha-container"></div>
+            <div class="space-y-4">
+              <div id="captcha-container" class="flex justify-center"></div>
+              <div id="form-status" class="hidden rounded-2xl px-4 py-3" aria-live="polite">
+                <p class="text-sm font-medium text-center"></p>
+              </div>
             </div>
-            {/* Mensaje de Estado */}
-            <div id="form-status" class="hidden mt-4 p-4 rounded-lg" aria-live="polite">
-              <p class="text-center font-medium"></p>
-            </div>
-            {/* Botón Submit (color original ac-blue) */}
-            <button type="submit" class="w-full bg-[#00B4D8] hover:bg-[#0096c7] text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#00B4D8] focus:ring-offset-2 shadow-lg disabled:opacity-50">
+
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white font-semibold py-4 rounded-2xl shadow-lg shadow-teal-500/30 hover:from-teal-400 hover:to-blue-400 transition-all duration-300 focus:ring-4 focus:ring-teal-200"
+            >
               Enviar mensaje
             </button>
           </form>
         </div>
 
-        {/* --- Columna Derecha: Secciones Adicionales (Restauradas) --- */}
         <div class="space-y-8">
-            {/* Contacto Directo */}
-            <div>
-                 <h3 class="text-2xl font-bold text-gray-900 mb-6">Contacto Directo</h3>
-                  <div class="space-y-4">
-                      {contactDetails.map(item => (
-                      <a href={item.href} target="_blank" rel="noopener noreferrer" class="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                          <div class:list={["flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center", item.bgColor]}> <i class:list={[item.icon, item.textColor, "text-xl"]}></i> </div>
-                          <div> <p class="text-sm font-semibold text-gray-900">{item.title}</p> <p class="text-gray-600 text-sm break-all">{item.value}</p> </div>
-                      </a>
-                      ))}
+          <div class="bg-gray-900 text-white rounded-3xl p-8">
+            <p class="text-sm uppercase tracking-[0.45em] text-gray-400 mb-5">Canales</p>
+            <div class="space-y-6">
+              {contactChannels.map((item) => (
+                <a
+                  href={item.href}
+                  target={item.href.startsWith("http") ? "_blank" : "_self"}
+                  rel="noreferrer noopener"
+                  class="group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
+                >
+                  <span class="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center text-lg text-teal-300 group-hover:bg-white/20">
+                    <i class={item.icon}></i>
+                  </span>
+                  <div>
+                    <p class="text-xs tracking-[0.35em] uppercase text-gray-400">{item.title}</p>
+                    <p class="text-lg font-semibold text-white">{item.value}</p>
+                    <p class="text-sm text-gray-300">{item.description}</p>
                   </div>
+                </a>
+              ))}
             </div>
-            {/* Por qué elegirnos */}
-            <div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-6">¿Por qué elegirnos?</h3>
-                <ul class="space-y-3 text-gray-700">
-                    <li class="flex items-center"><i class="fas fa-hand-holding-usd text-ac-blue w-5 text-center mr-3" aria-hidden="true"></i>Crédito automotriz</li>
-                    <li class="flex items-center"><i class="fas fa-percentage text-ac-blue w-5 text-center mr-3" aria-hidden="true"></i>La mejor tasa de interés</li>
-                    <li class="flex items-center"><i class="fas fa-shield-alt text-ac-blue w-5 text-center mr-3" aria-hidden="true"></i>Garantía</li>
-                </ul>
-            </div>
-        </div>
-        {/* --- Fin Columna Derecha --- */}
-      </div>
+          </div>
 
-      {/* --- Sucursales (Restauradas) --- */}
-      <div class="text-center mb-12 mt-20">
-         <h2 class="text-3xl font-bold text-gray-900">Nuestras Sucursales</h2>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {locations.map(loc => (
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden transform hover:-translate-y-1.5 transition-transform duration-300">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">{loc.name}</h3>
-                    <p class="text-gray-600 flex items-start"><i class="fas fa-map-marker-alt text-ac-blue mt-1 mr-2"></i>{loc.address}</p>
-                </div>
-                <div class="aspect-w-16 aspect-h-9 bg-gray-200">
-                    {/* Renderizado condicional del mapa */}
-                    {loc.mapSrc && (loc.mapSrc.startsWith('http') || loc.mapSrc.startsWith('www')) && !loc.mapSrc.includes('URL_DE_EMBED') ? (
-                         <iframe src={loc.mapSrc} width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title={`Mapa de ${loc.name}`}></iframe>
-                     ) : (
-                         <div class="w-full h-[300px] flex items-center justify-center bg-gray-100">
-                             <p class="text-gray-500 text-sm px-4 text-center">
-                                 {loc.mapSrc.includes('URL_DE_EMBED')
-                                    ? `Obtén la URL de "Insertar Mapa" en Google Maps para ${loc.name} y pégala.`
-                                    : "URL del mapa inválida."
-                                 }
-                             </p>
-                         </div>
-                     )
-                    }
-                </div>
+          <div class="bg-white rounded-3xl shadow-lg p-8 border border-gray-100">
+            <p class="text-sm uppercase tracking-[0.45em] text-gray-500 mb-5">Preguntas frecuentes</p>
+            <div class="space-y-4">
+              {faqs.map((faq) => (
+                <details class="group rounded-2xl border border-gray-200 p-4 [&_summary]:cursor-pointer">
+                  <summary class="flex items-center justify-between gap-4 text-gray-900 font-semibold">
+                    <span>{faq.question}</span>
+                    <i class="fas fa-plus group-open:rotate-45 transition-transform"></i>
+                  </summary>
+                  <p class="mt-3 text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+                </details>
+              ))}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-gray-50 py-20">
+    <div class="max-w-6xl mx-auto px-6 lg:px-10">
+      <div class="text-center mb-12">
+        <p class="text-sm uppercase tracking-[0.45em] text-gray-500">Nuestras sucursales</p>
+        <h2 class="text-3xl font-semibold text-gray-900 mt-3">Visítanos cuando quieras</h2>
+        <p class="text-gray-600 mt-3">
+          Agenda tu visita y te acompañaremos durante la inspección y tasación del vehículo.
+        </p>
+      </div>
+      <div class="grid gap-8 lg:grid-cols-3">
+        {officeLocations.map((office) => (
+          <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100">
+            <div class="p-6 space-y-2">
+              <h3 class="text-xl font-semibold text-gray-900">{office.name}</h3>
+              <p class="text-gray-600">{office.address}</p>
+            </div>
+            <div class="aspect-[4/3] bg-gray-100">
+              <iframe
+                src={office.mapUrl}
+                loading="lazy"
+                allowfullscreen
+                referrerpolicy="no-referrer-when-downgrade"
+                class="w-full h-full border-0"
+                title={`Ubicación ${office.name}`}
+              ></iframe>
+            </div>
+          </div>
         ))}
       </div>
-      {/* --- Fin Sucursales --- */}
     </div>
-  </main>
+  </section>
 </Layout>

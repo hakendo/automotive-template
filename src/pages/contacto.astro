@@ -1,7 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const siteKey = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? "";
+const formEndpoint = import.meta.env.PUBLIC_FORMSPREE_ENDPOINT ?? "https://formspree.io/f/mblpdnon";
+const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
 const contactInfo = [
   {
@@ -52,23 +53,10 @@ const branchLocations = [
   image="/image-service-01.webp"
 >
   <Fragment slot="head">
-    <script define:vars={{ siteKey }}>
-      const HCAPTCHA_SRC = "https://js.hcaptcha.com/1/api.js?render=explicit";
-
-      const loadHcaptcha = () => {
-        if (window.hcaptcha) return Promise.resolve(window.hcaptcha);
-        return new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = HCAPTCHA_SRC;
-          script.async = true;
-          script.defer = true;
-          script.onload = () =>
-            window.hcaptcha ? resolve(window.hcaptcha) : reject(new Error("hCaptcha no disponible"));
-          script.onerror = () => reject(new Error("No pudimos cargar hCaptcha"));
-          document.head.appendChild(script);
-        });
-      };
-
+    {recaptchaKey && (
+      <script src={`https://www.google.com/recaptcha/api.js?render=${recaptchaKey}`} async defer></script>
+    )}
+    <script define:vars={{ recaptchaKey, formEndpoint }}>
       const toggleDisabled = (form, disabled) => {
         form.querySelectorAll("input, textarea, button").forEach((el) => {
           if (disabled) {
@@ -81,7 +69,18 @@ const branchLocations = [
 
       const setStatus = (element, message, type) => {
         if (!element) return;
-        element.classList.remove("hidden", "bg-blue-50", "bg-green-50", "bg-red-50", "text-blue-700", "text-green-700", "text-red-700", "border-blue-200", "border-green-200", "border-red-200");
+        element.classList.remove(
+          "hidden",
+          "bg-blue-50",
+          "bg-green-50",
+          "bg-red-50",
+          "text-blue-700",
+          "text-green-700",
+          "text-red-700",
+          "border-blue-200",
+          "border-green-200",
+          "border-red-200"
+        );
 
         const typeToClasses = {
           info: ["bg-blue-50", "text-blue-700", "border-blue-200"],
@@ -90,25 +89,32 @@ const branchLocations = [
         };
 
         element.classList.add(...(typeToClasses[type] ?? typeToClasses.info));
-        element.querySelector("span").textContent = message;
+        const textNode = element.querySelector("span");
+        if (textNode) textNode.textContent = message;
       };
 
-      document.addEventListener("DOMContentLoaded", async () => {
+      document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("contact-form");
         const statusBox = document.getElementById("form-status");
-        const captchaSlot = document.getElementById("captcha-slot");
+        const tokenField = document.getElementById("recaptcha-token");
 
-        if (!form || !statusBox || !captchaSlot) {
-          console.error("No se encontró alguno de los elementos del formulario.");
+        if (!form || !statusBox || !tokenField) {
+          console.error("No se encontraron los elementos del formulario.");
           return;
         }
 
-        if (!siteKey) {
+        if (!formEndpoint) {
+          toggleDisabled(form, true);
+          setStatus(statusBox, "No está configurado el endpoint de Formspree.", "error");
+          return;
+        }
+
+        if (!recaptchaKey) {
           toggleDisabled(form, true);
           setStatus(
             statusBox,
-            "Falta configurar hCaptcha. Revisa la variable PUBLIC_HCAPTCHA_SITE_KEY.",
-            "error",
+            "Falta configurar reCAPTCHA. Revisa la variable PUBLIC_RECAPTCHA_SITE_KEY.",
+            "error"
           );
           return;
         }
@@ -119,62 +125,61 @@ const branchLocations = [
           if (field && typeof value === "string") field.value = value;
         });
 
-        let widgetId = null;
-        try {
-          const hcaptcha = await loadHcaptcha();
-          widgetId = hcaptcha.render(captchaSlot, { sitekey: siteKey, size: "normal" });
-        } catch (error) {
-          console.error("No fue posible inicializar hCaptcha:", error);
-          toggleDisabled(form, true);
-          setStatus(statusBox, "No pudimos cargar la verificación de seguridad. Inténtalo más tarde.", "error");
-          return;
-        }
+        const showStatus = (message, type) => setStatus(statusBox, message, type);
 
-        form.addEventListener("submit", async (event) => {
+        form.addEventListener("submit", (event) => {
           event.preventDefault();
           if (!form.reportValidity()) return;
 
-          const token = widgetId !== null ? window.hcaptcha?.getResponse(widgetId) : "";
-          if (!token) {
-            setStatus(statusBox, "Confirma que no eres un robot para continuar.", "error");
+          toggleDisabled(form, true);
+          showStatus("Verificando seguridad...", "info");
+
+          if (!window.grecaptcha) {
+            showStatus("No pudimos cargar reCAPTCHA. Recarga la página.", "error");
+            toggleDisabled(form, false);
             return;
           }
 
-          const data = Object.fromEntries(new FormData(form).entries());
-          data["h-captcha-response"] = token;
+          window.grecaptcha.ready(() => {
+            window.grecaptcha
+              .execute(recaptchaKey, { action: "submit" })
+              .then(async (token) => {
+                tokenField.value = token;
+                showStatus("Enviando mensaje...", "info");
 
-          toggleDisabled(form, true);
-          setStatus(statusBox, "Enviando mensaje...", "info");
+                try {
+                  const response = await fetch(formEndpoint, {
+                    method: "POST",
+                    headers: { Accept: "application/json" },
+                    body: new FormData(form),
+                  });
 
-          try {
-            const response = await fetch("/api/send-email", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            });
+                  if (!response.ok) {
+                    const error = await response.json().catch(() => null);
+                    throw new Error(error?.error || "No se pudo enviar tu mensaje.");
+                  }
 
-            const result = await response.json().catch(() => ({
-              success: false,
-              message: "Respuesta inválida del servidor.",
-            }));
-
-            if (!response.ok || result.success === false) {
-              throw new Error(result.message ?? "No fue posible enviar tu mensaje.");
-            }
-
-            form.reset();
-            if (widgetId !== null) window.hcaptcha?.reset(widgetId);
-            const name = typeof data.name === "string" ? data.name : "";
-            window.location.href = `/gracias?name=${encodeURIComponent(name)}`;
-          } catch (error) {
-            console.error("Error al enviar el formulario:", error);
-            const message =
-              error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.";
-            setStatus(statusBox, message, "error");
-            if (widgetId !== null) window.hcaptcha?.reset(widgetId);
-          } finally {
-            toggleDisabled(form, false);
-          }
+                  const nameField = form.querySelector('[name="name"]');
+                  const nameValue =
+                    nameField && "value" in nameField && typeof nameField.value === "string"
+                      ? nameField.value
+                      : "";
+                  window.location.href = `/gracias?name=${encodeURIComponent(nameValue)}`;
+                } catch (error) {
+                  console.error("Error al enviar el formulario:", error);
+                  showStatus(
+                    error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.",
+                    "error"
+                  );
+                  toggleDisabled(form, false);
+                }
+              })
+              .catch((error) => {
+                console.error("Error reCAPTCHA:", error);
+                showStatus("No pudimos validar reCAPTCHA. Inténtalo otra vez.", "error");
+                toggleDisabled(form, false);
+              });
+          });
         });
       });
     </script>
@@ -197,7 +202,12 @@ const branchLocations = [
   <section class="bg-white">
     <div class="max-w-5xl mx-auto px-6 py-16 lg:py-20">
       <div class="grid gap-16 lg:grid-cols-2">
-        <form id="contact-form" class="space-y-6 rounded-2xl border border-gray-100 p-8 shadow-lg">
+        <form
+          id="contact-form"
+          method="POST"
+          action={formEndpoint}
+          class="space-y-6 rounded-2xl border border-gray-100 p-8 shadow-lg"
+        >
           <div class="space-y-3">
             <h2 class="text-3xl font-semibold text-gray-900">Envíanos un mensaje</h2>
             <p class="text-gray-600">
@@ -255,16 +265,17 @@ const branchLocations = [
             ></textarea>
           </label>
 
-          <div class="space-y-4">
-            <div id="captcha-slot" class="flex justify-center"></div>
-            <div
-              id="form-status"
-              class="hidden rounded-xl border px-4 py-3 text-sm font-medium"
-              aria-live="polite"
-            >
-              <span></span>
-            </div>
+          <input type="hidden" name="g-recaptcha-response" id="recaptcha-token" />
+
+          <div
+            id="form-status"
+            class="hidden rounded-xl border px-4 py-3 text-sm font-medium"
+            aria-live="polite"
+          >
+            <span></span>
           </div>
+
+          <p class="text-xs text-gray-400">Protegido por reCAPTCHA y Formspree.</p>
 
           <button
             type="submit"

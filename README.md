@@ -20,8 +20,8 @@
 🔍 **Búsqueda Inteligente** - Encuentra el vehículo perfecto rápidamente  
 📱 **Mobile-First** - Optimizado para dispositivos móviles  
 ⚡ **Carga Ultrarrápida** - Powered by Astro SSR  
-💌 **Sistema de Contacto** - Integración con Resend para emails  
-🛡️ **Anti-Spam** - Protección con hCaptcha  
+💌 **Sistema de Contacto** - Integración con Formspree para emails  
+🛡️ **Anti-Spam** - Protección con reCAPTCHA  
 🎯 **SEO Optimizado** - Mejor posicionamiento en buscadores  
 🤝 **Partner Confiable** - Más que una automotora, tu aliado automotriz
 
@@ -39,8 +39,8 @@
 
 ### **Backend & APIs**
 
-- **[Resend 4.6.0](https://resend.com/)** - Servicio de emails transaccionales
-- **[hCaptcha](https://www.hcaptcha.com/)** - Protección anti-spam
+- **[Formspree](https://formspree.io/)** - Procesamiento de formularios y envío de correos
+- **[reCAPTCHA](https://developers.google.com/recaptcha)** - Protección anti-spam
 - **[Astro Node 9.3.0](https://docs.astro.build/en/guides/integrations-guide/node/)** - Servidor SSR
 
 ### **Herramientas**
@@ -76,16 +76,11 @@ npm install
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
-# 📧 Configuración de Resend (para emails)
-RESEND_API_KEY="tu_resend_api_key_aqui"
+# 📧 Configuración de Formspree (para el formulario de contacto)
+PUBLIC_FORMSPREE_ENDPOINT="https://formspree.io/f/mblpdnon"
 
-# 🛡️ Configuración de hCaptcha (anti-spam)
-PUBLIC_HCAPTCHA_SITE_KEY="tu_hcaptcha_site_key_publico"
-HCAPTCHA_SECRET_KEY="tu_hcaptcha_secret_key_privado"
-
-# ❗ Importante
-# La clave pública se usa en el navegador y la clave secreta únicamente en el servidor.
-# Ambas deben configurarse en tu `.env` local y en Vercel → Settings → Environment Variables.
+# 🛡️ Protección reCAPTCHA (anti-spam)
+PUBLIC_RECAPTCHA_SITE_KEY="tu_site_key_recaptcha_v3"
 
 # 🔑 Token de API (para datos de vehículos)
 PUBLIC_TOKEN="tu_public_token_aqui"
@@ -166,18 +161,17 @@ wildcars/
 
 ## 🌍 **Variables de Entorno**
 
-### **RESEND_API_KEY**
+### **PUBLIC_FORMSPREE_ENDPOINT**
 
-- **Propósito**: Envío de emails de contacto
-- **Obtener**: [Resend Dashboard](https://resend.com/api-keys)
-- **Formato**: `re_xxxxxxxxxx`
+- **Propósito**: URL del endpoint de Formspree que recibe las solicitudes del formulario.
+- **Obtener**: Panel de Formspree → Form → Integration → Form Endpoint.
+- **Formato**: `https://formspree.io/f/xxxxxxx`
 
-### **PUBLIC_HCAPTCHA_SITE_KEY / HCAPTCHA_SECRET_KEY**
+### **PUBLIC_RECAPTCHA_SITE_KEY**
 
-- **Propósito**: Clave pública para renderizar el widget y clave secreta para verificar tokens server-side
-- **Obtener**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/sites)
-- **Formato**: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (site) y `0x...` (secret)
-- **Tip**: El secret se encuentra en *Settings → API Keys → Secret key*. Debes copiarlo a `HCAPTCHA_SECRET_KEY` y subirlo también a Vercel.
+- **Propósito**: Clave de sitio reCAPTCHA v3 usada para generar el token de verificación en el navegador.
+- **Obtener**: [Google reCAPTCHA Admin](https://www.google.com/recaptcha/admin/create)
+- **Formato**: `6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
 ### **PUBLIC_TOKEN**
 

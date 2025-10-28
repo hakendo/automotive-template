@@ -1,13 +1,140 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
+const formEndpoint = import.meta.env.PUBLIC_FORMSPREE_ENDPOINT ?? "https://formspree.io/f/mblpdnon";
+const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 ---
 
 <Layout 
   title="Consigna tu Auto - Automotive Consulting" 
   description="Vende tu auto de forma segura, rápida y al mejor precio del mercado con nuestro servicio de consignación."
 >
+  <Fragment slot="head">
+    {recaptchaKey && (
+      <script src={`https://www.google.com/recaptcha/api.js?render=${recaptchaKey}`} async defer></script>
+    )}
+    <script define:vars={{ recaptchaKey, formEndpoint }}>
+      const toggleDisabled = (form, disabled) => {
+        form.querySelectorAll("input, textarea, button").forEach((el) => {
+          if (disabled) {
+            el.setAttribute("disabled", "true");
+          } else {
+            el.removeAttribute("disabled");
+          }
+        });
+      };
+
+      const setStatus = (element, message, type) => {
+        if (!element) return;
+        element.classList.remove(
+          "hidden",
+          "bg-blue-50",
+          "bg-green-50",
+          "bg-red-50",
+          "text-blue-700",
+          "text-green-700",
+          "text-red-700",
+          "border-blue-200",
+          "border-green-200",
+          "border-red-200"
+        );
+
+        const typeToClasses = {
+          info: ["bg-blue-50", "text-blue-700", "border-blue-200"],
+          success: ["bg-green-50", "text-green-700", "border-green-200"],
+          error: ["bg-red-50", "text-red-700", "border-red-200"],
+        };
+
+        element.classList.add(...(typeToClasses[type] ?? typeToClasses.info));
+        const textNode = element.querySelector("span");
+        if (textNode) textNode.textContent = message;
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("contact-form");
+        const statusBox = document.getElementById("form-status");
+        const tokenField = document.getElementById("recaptcha-token");
+
+        if (!form || !statusBox || !tokenField) {
+          console.error("No se encontraron los elementos del formulario de consignación.");
+          return;
+        }
+
+        if (!formEndpoint) {
+          toggleDisabled(form, true);
+          setStatus(statusBox, "No está configurado el endpoint de Formspree.", "error");
+          return;
+        }
+
+        if (!recaptchaKey) {
+          toggleDisabled(form, true);
+          setStatus(
+            statusBox,
+            "Falta configurar reCAPTCHA. Revisa la variable PUBLIC_RECAPTCHA_SITE_KEY.",
+            "error"
+          );
+          return;
+        }
+
+        const showStatus = (message, type) => setStatus(statusBox, message, type);
+
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+
+          toggleDisabled(form, true);
+          showStatus("Verificando seguridad...", "info");
+
+          if (!window.grecaptcha) {
+            showStatus("No pudimos cargar reCAPTCHA. Recarga la página.", "error");
+            toggleDisabled(form, false);
+            return;
+          }
+
+          window.grecaptcha.ready(() => {
+            window.grecaptcha
+              .execute(recaptchaKey, { action: "submit" })
+              .then(async (token) => {
+                tokenField.value = token;
+                showStatus("Enviando tu solicitud...", "info");
+
+                try {
+                  const response = await fetch(formEndpoint, {
+                    method: "POST",
+                    headers: { Accept: "application/json" },
+                    body: new FormData(form),
+                  });
+
+                  if (!response.ok) {
+                    const error = await response.json().catch(() => null);
+                    throw new Error(error?.error || "No se pudo enviar tu solicitud.");
+                  }
+
+                  const nameField = form.querySelector('[name="name"]');
+                  const nameValue =
+                    nameField && "value" in nameField && typeof nameField.value === "string"
+                      ? nameField.value
+                      : "";
+                  window.location.href = `/gracias?name=${encodeURIComponent(nameValue)}`;
+                } catch (error) {
+                  console.error("Error al enviar la solicitud:", error);
+                  showStatus(
+                    error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.",
+                    "error"
+                  );
+                  toggleDisabled(form, false);
+                }
+              })
+              .catch((error) => {
+                console.error("Error reCAPTCHA:", error);
+                showStatus("No pudimos validar reCAPTCHA. Inténtalo otra vez.", "error");
+                toggleDisabled(form, false);
+              });
+          });
+        });
+      });
+    </script>
+  </Fragment>
   <section class="bg-gray-900 py-24 pt-48 text-center text-white">
     <div class="md:w-7xl mx-auto px-4">
       <h1 class="text-4xl md:text-5xl font-bold mb-4">Consigna tu Auto con Nosotros</h1>
@@ -23,7 +150,12 @@ const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
         <h2 class="text-3xl font-bold text-gray-900 mb-2">Ingresa tus datos</h2>
         <p class="text-gray-600 mb-8">Completa el formulario y uno de nuestros expertos te contactará a la brevedad.</p>
 
-        <form id="contact-form" class="space-y-6">
+        <form
+          id="contact-form"
+          method="POST"
+          action={formEndpoint}
+          class="space-y-6"
+        >
           
           <fieldset class="border-t border-gray-200 pt-6">
             <legend class="text-lg font-semibold text-gray-800 mb-4">Tus Datos de Contacto</legend>
@@ -65,8 +197,15 @@ const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
             </div>
           </fieldset>
           
-          <div class="h-captcha" data-sitekey={keyHcaptcha}></div>
-          <div id="form-status" class="hidden" aria-live="polite"><p class="text-center font-medium"></p></div>
+          <input type="hidden" name="g-recaptcha-response" id="recaptcha-token" />
+          <div
+            id="form-status"
+            class="hidden rounded-lg border px-4 py-3 text-sm font-medium"
+            aria-live="polite"
+          >
+            <span></span>
+          </div>
+          <p class="text-xs text-gray-400">Protegido por reCAPTCHA y Formspree.</p>
           
           <button type="submit" class="w-full bg-ac-blue hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-[1.02] shadow-lg">
             Enviar Solicitud de Consignación
@@ -76,53 +215,3 @@ const keyHcaptcha: string = import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY ?? '';
     </div>
   </main>
 </Layout>
-
-<script>
-  const form = document.getElementById('contact-form') as HTMLFormElement;
-  const formStatus = document.getElementById('form-status');
-  const statusText = formStatus?.querySelector('p');
-
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!form || !formStatus || !statusText) return;
-
-    const hcaptchaResponse = (window as any).hcaptcha?.getResponse();
-    if (!hcaptchaResponse) {
-      statusText.textContent = 'Por favor, completa la verificación de seguridad.';
-      formStatus.className = 'text-red-700 text-center p-4 bg-red-50 rounded-lg border border-red-200 block';
-      return;
-    }
-
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    data['h-captcha-response'] = hcaptchaResponse;
-
-    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-    submitButton.disabled = true;
-    submitButton.textContent = 'Enviando...';
-    
-    statusText.textContent = 'Enviando tu solicitud...';
-    formStatus.className = 'text-gray-600 text-center p-4 bg-gray-100 rounded-lg block';
-
-    try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Error en el servidor');
-
-      form.reset();
-      (window as any).hcaptcha?.reset();
-      statusText.textContent = '¡Solicitud enviada con éxito! Te contactaremos pronto.';
-      formStatus.className = 'text-green-700 text-center p-4 bg-green-50 rounded-lg border border-green-200 block';
-    } catch (error) {
-      statusText.textContent = 'Hubo un error al enviar tu solicitud. Por favor, inténtalo de nuevo.';
-      formStatus.className = 'text-red-700 text-center p-4 bg-red-50 rounded-lg border border-red-200 block';
-    } finally {
-      submitButton.disabled = false;
-      submitButton.textContent = 'Enviar Solicitud de Consignación';
-    }
-  });
-</script>

@@ -11,7 +11,11 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 >
   <Fragment slot="head">
     {recaptchaKey && (
-      <script src={`https://www.google.com/recaptcha/api.js?render=${recaptchaKey}`} async defer></script>
+      <script
+        src={`https://www.google.com/recaptcha/enterprise.js?render=${recaptchaKey}`}
+        async
+        defer
+      ></script>
     )}
     <script define:vars={{ recaptchaKey, formEndpoint }}>
       const toggleDisabled = (form, disabled) => {
@@ -85,14 +89,15 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
           toggleDisabled(form, true);
           showStatus("Verificando seguridad...", "info");
 
-          if (!window.grecaptcha) {
+          const recaptcha = window.grecaptcha?.enterprise;
+          if (!recaptcha) {
             showStatus("No pudimos cargar reCAPTCHA. Recarga la página.", "error");
             toggleDisabled(form, false);
             return;
           }
 
-          window.grecaptcha.ready(() => {
-            window.grecaptcha
+          recaptcha.ready(() => {
+            recaptcha
               .execute(recaptchaKey, { action: "submit" })
               .then(async (token) => {
                 tokenField.value = token;

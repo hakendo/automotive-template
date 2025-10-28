@@ -81,6 +81,7 @@ PUBLIC_FORMSPREE_ENDPOINT="https://formspree.io/f/mblpdnon"
 
 # 🛡️ Protección reCAPTCHA (anti-spam)
 PUBLIC_RECAPTCHA_SITE_KEY="tu_site_key_recaptcha_v3"
+RECAPTCHA_SECRET_KEY="tu_secret_key_recaptcha_v3"
 
 # 🔑 Token de API (para datos de vehículos)
 PUBLIC_TOKEN="tu_public_token_aqui"
@@ -171,6 +172,12 @@ wildcars/
 
 - **Propósito**: Clave de sitio reCAPTCHA v3 usada para generar el token de verificación en el navegador.
 - **Obtener**: [Google reCAPTCHA Admin](https://www.google.com/recaptcha/admin/create)
+- **Formato**: `6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+### **RECAPTCHA_SECRET_KEY**
+
+- **Propósito**: Clave secreta usada por el backend para validar los tokens reCAPTCHA antes de reenviar la solicitud a Formspree.
+- **Obtener**: Misma propiedad en Google reCAPTCHA, pestaña Integración → “Clave secreta heredada”.
 - **Formato**: `6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
 ### **PUBLIC_TOKEN**

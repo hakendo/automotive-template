@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const formEndpoint = import.meta.env.PUBLIC_FORMSPREE_ENDPOINT ?? "https://formspree.io/f/mblpdnon";
 const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 ---
 
@@ -17,7 +16,9 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
         defer
       ></script>
     )}
-    <script define:vars={{ recaptchaKey, formEndpoint }}>
+    <script define:vars={{ recaptchaKey }}>
+      const SUBMIT_ENDPOINT = "/api/contact-submit";
+
       const toggleDisabled = (form, disabled) => {
         form.querySelectorAll("input, textarea, button").forEach((el) => {
           if (disabled) {
@@ -64,12 +65,6 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
           return;
         }
 
-        if (!formEndpoint) {
-          toggleDisabled(form, true);
-          setStatus(statusBox, "No está configurado el endpoint de Formspree.", "error");
-          return;
-        }
-
         if (!recaptchaKey) {
           toggleDisabled(form, true);
           setStatus(
@@ -104,10 +99,14 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
                 showStatus("Enviando tu solicitud...", "info");
 
                 try {
-                  const response = await fetch(formEndpoint, {
+                  const formData = new FormData(form);
+                  const body = Object.fromEntries(formData.entries());
+                  body["g-recaptcha-response"] = token;
+
+                  const response = await fetch(SUBMIT_ENDPOINT, {
                     method: "POST",
-                    headers: { Accept: "application/json" },
-                    body: new FormData(form),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
                   });
 
                   if (!response.ok) {

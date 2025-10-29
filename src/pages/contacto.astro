@@ -52,7 +52,13 @@ const branchLocations = [
   image="/image-service-01.webp"
 >
   <Fragment slot="head">
-    {recaptchaKey && <script src="https://www.google.com/recaptcha/api.js" async defer></script>}
+    {recaptchaKey && (
+      <script
+        src="https://www.google.com/recaptcha/api.js"
+        async
+        defer
+      ></script>
+    )}
     <script define:vars={{ recaptchaKey }}>
       const SUBMIT_ENDPOINT = "/api/contact-submit";
 
@@ -95,7 +101,9 @@ const branchLocations = [
       document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("contact-form");
         const statusBox = document.getElementById("form-status");
-        if (!form || !statusBox) {
+        const tokenField = document.getElementById("recaptcha-token");
+
+        if (!form || !statusBox || !tokenField) {
           console.error("No se encontraron los elementos del formulario.");
           return;
         }
@@ -123,60 +131,53 @@ const branchLocations = [
           if (!form.reportValidity()) return;
 
           toggleDisabled(form, true);
-          showStatus("Verificando seguridad...", "info");
-
-          const recaptcha = window.grecaptcha;
-          if (!recaptcha || typeof recaptcha.getResponse !== "function") {
-            showStatus("No pudimos cargar reCAPTCHA. Recarga la página.", "error");
-            toggleDisabled(form, false);
-            return;
-          }
-
-          const token = recaptcha.getResponse();
-          if (!token) {
-            showStatus("Por favor, confirma que no eres un robot.", "error");
-            toggleDisabled(form, false);
-            return;
-          }
-
           showStatus("Enviando mensaje...", "info");
 
           try {
             const formData = new FormData(form);
+            const recaptchaResponse = window.grecaptcha.getResponse();
+            
+            if (!recaptchaResponse) {
+              showStatus("Por favor, completa el captcha", "error");
+              toggleDisabled(form, false);
+              return;
+            }
+
             const body = Object.fromEntries(formData.entries());
-            body["g-recaptcha-response"] = token;
-            body["formType"] = "contacto";
+            body["g-recaptcha-response"] = recaptchaResponse;
 
-            const response = await fetch(SUBMIT_ENDPOINT, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
-            });
+                  const response = await fetch(SUBMIT_ENDPOINT, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                  });
 
-            if (!response.ok) {
-              const error = await response.json().catch(() => null);
-              throw new Error(error?.message || "No se pudo enviar tu mensaje.");
-            }
+                  if (!response.ok) {
+                    const error = await response.json().catch(() => null);
+                    throw new Error(error?.error || "No se pudo enviar tu mensaje.");
+                  }
 
-            recaptcha.reset();
-
-            const nameField = form.querySelector('[name="name"]');
-            const nameValue =
-              nameField && "value" in nameField && typeof nameField.value === "string"
-                ? nameField.value
-                : "";
-            window.location.href = `/gracias?name=${encodeURIComponent(nameValue)}`;
-          } catch (error) {
-            console.error("Error al enviar el formulario:", error);
-            if (typeof recaptcha.reset === "function") {
-              recaptcha.reset();
-            }
-            showStatus(
-              error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.",
-              "error"
-            );
-            toggleDisabled(form, false);
-          }
+                  const nameField = form.querySelector('[name="name"]');
+                  const nameValue =
+                    nameField && "value" in nameField && typeof nameField.value === "string"
+                      ? nameField.value
+                      : "";
+                  window.location.href = `/gracias?name=${encodeURIComponent(nameValue)}`;
+                } catch (error) {
+                  console.error("Error al enviar el formulario:", error);
+                  showStatus(
+                    error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.",
+                    "error"
+                  );
+                  toggleDisabled(form, false);
+                }
+              })
+              .catch((error) => {
+                console.error("Error reCAPTCHA:", error);
+                showStatus("No pudimos validar reCAPTCHA. Inténtalo otra vez.", "error");
+                toggleDisabled(form, false);
+              });
+          });
         });
       });
     </script>
@@ -249,7 +250,7 @@ const branchLocations = [
           </label>
 
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
-            Mensaje
+            Mensajej
             <textarea
               name="message"
               rows="5"
@@ -261,9 +262,7 @@ const branchLocations = [
             ></textarea>
           </label>
 
-          <div class="flex justify-center">
-            <div class="g-recaptcha" data-sitekey={recaptchaKey}></div>
-          </div>
+          <div class="g-recaptcha mb-4" data-sitekey={recaptchaKey}></div>
 
           <div
             id="form-status"
@@ -273,7 +272,7 @@ const branchLocations = [
             <span></span>
           </div>
 
-          <p class="text-xs text-gray-400 text-center">Protegido por reCAPTCHA.</p>
+          <p class="text-xs text-gray-400">Este sitio está protegido por reCAPTCHA.</p>
 
           <button
             type="submit"

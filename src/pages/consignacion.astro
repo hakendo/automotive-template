@@ -192,11 +192,7 @@ const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
           </fieldset>
           
           <div class="flex justify-center">
-            {recaptchaKey ? (
-              <div class="g-recaptcha" data-sitekey={recaptchaKey}></div>
-            ) : (
-              <p class="text-sm text-red-500">Configura la clave pública de reCAPTCHA.</p>
-            )}
+            <div class="g-recaptcha" data-sitekey={recaptchaKey}></div>
           </div>
           <div
             id="form-status"

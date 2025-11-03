@@ -1,11 +1,15 @@
 ---
 import { Image } from 'astro:assets';
+import 'swiper/css';
 
 import falabella from '../../assets/brands/Banco-falabella.png';
-import santander from '../../assets/brands/Santander-finance.png';
-import tanner from '../../assets/brands/Tanner.png';
+import autofact from '../../assets/brands/logo-autofact.webp';
 import unidad from '../../assets/brands/Unidad-financiera.png';
 import venpu from '../../assets/brands/Venpu.png';
+import autofin from '../../assets/brands/logo-autofin.webp';
+import global from '../../assets/brands/logo-global.webp';
+import seguro from '../../assets/brands/logo-club-del-seguro.webp';
+import dily from '../../assets/brands/logo-dily.webp';
 
 
 const brands = [
@@ -16,14 +20,14 @@ const brands = [
   },
 
   {
-    name: 'Santander Finance',      
-    logo: santander,  
-    alt: 'Tanner Logo' 
+    name: 'Autofact',      
+    logo: autofact,  
+    alt: 'Autofact Logo' 
   },  
   {
-    name: 'Tanner',      
-    logo: tanner,  
-    alt: 'Santander Logo' 
+    name: 'Autofin',      
+    logo: autofin,  
+    alt: 'Autofin Logo' 
   },
   {
     name: 'Unidad',      
@@ -35,27 +39,73 @@ const brands = [
     logo: venpu,
     alt: 'Venpu Logo'
   }
+   ,{
+    name: 'Global',
+    logo: global,
+    alt: 'Global Logo'
+ },
+  {
+    name: 'Club del Seguro',
+    logo: seguro,
+    alt: 'Club Del Seguro Logo'
+  }
+    ,{
+      name: 'Dily',
+      logo: dily,
+      alt: 'Dily Logo'
+    } 
 ];
 ---
-
 
 <div class="bg-white py-24 sm:py-32">
   <div class="max-w-7xl mx-auto px-6 lg:px-8">
     <h2 class="text-center font-semibold text-black text-2xl sm:text-4xl">Nuestros Partners</h2>
-    <div class="mx-auto mt-10 grid grid-cols-2 items-center gap-x-4 gap-y-10 sm:grid-cols-5 lg:grid-cols-5">
-    
+    <swiper-container
+      class="partners-swiper mx-auto mt-10 block w-full"
+      slides-per-view="2"
+      space-between="24"
+      loop="true"
+      autoplay="true"
+      autoplay-delay="2500"
+      autoplay-disable-on-interaction="false"
+      speed="600"
+      breakpoints='{"640":{"slidesPerView":3,"spaceBetween":24},"768":{"slidesPerView":4,"spaceBetween":24},"1024":{"slidesPerView":5,"spaceBetween":32}}'
+      aria-label="Carrusel de logos de partners"
+    >
       {brands.map((brand) => (
-        <div class="flex items-center justify-center">
+        <swiper-slide class="flex items-center justify-center px-4">
           <Image
-            class=" w-full object-contain"
+            class="h-16 w-auto object-contain sm:h-20"
             src={brand.logo ?? ''}
             alt={brand.alt ?? ''}
             width={220}
             height={90}
+            loading="lazy"
           />
-        </div>
+        </swiper-slide>
       ))}
-      
-    </div>
+    </swiper-container>
+
+    <noscript>
+      <div class="mx-auto mt-10 grid grid-cols-2 items-center gap-x-4 gap-y-10 sm:grid-cols-5 lg:grid-cols-5">
+        {brands.map((brand) => (
+          <div class="flex items-center justify-center px-4">
+            <Image
+              class="h-16 w-auto object-contain sm:h-20"
+              src={brand.logo ?? ''}
+              alt={brand.alt ?? ''}
+              width={220}
+              height={90}
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    </noscript>
   </div>
 </div>
+
+<script type="module">
+  import { register } from 'swiper/element/bundle';
+  register();
+</script>

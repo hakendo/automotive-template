@@ -1,6 +1,5 @@
 ---
 import { Image } from 'astro:assets';
-import 'swiper/css';
 
 import falabella from '../../assets/brands/Banco-falabella.png';
 import autofact from '../../assets/brands/logo-autofact.webp';
@@ -60,32 +59,46 @@ const brands = [
 <div class="bg-white py-24 sm:py-32">
   <div class="max-w-7xl mx-auto px-6 lg:px-8">
     <h2 class="text-center font-semibold text-black text-2xl sm:text-4xl">Nuestros Partners</h2>
-    <swiper-container
-      class="partners-swiper mx-auto mt-10 block w-full"
-      slides-per-view="2"
-      space-between="24"
-      loop="true"
-      autoplay="true"
-      autoplay-delay="2500"
-      autoplay-disable-on-interaction="false"
-      speed="600"
-      breakpoints='{"640":{"slidesPerView":3,"spaceBetween":24},"768":{"slidesPerView":4,"spaceBetween":24},"1024":{"slidesPerView":5,"spaceBetween":32}}'
-      aria-label="Carrusel de logos de partners"
-    >
-      {brands.map((brand) => (
-        <swiper-slide class="flex items-center justify-center px-4">
-          <Image
-            class="h-16 w-auto object-contain sm:h-20"
-            src={brand.logo ?? ''}
-            alt={brand.alt ?? ''}
-            width={220}
-            height={90}
-            loading="lazy"
-          />
-        </swiper-slide>
-      ))}
-    </swiper-container>
-
+    <div class="partners-slider relative mx-auto mt-10 w-full" data-partners-slider>
+      <button
+        class="partners-nav partners-nav--prev"
+        type="button"
+        aria-label="Ver partners anteriores"
+        data-partners-nav="prev"
+      >
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M12.5 4.5 7.5 10l5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <div
+        class="partners-track flex snap-x snap-mandatory gap-8 overflow-x-auto scroll-smooth"
+        data-partners-track
+        aria-label="Carrusel de logos de partners"
+      >
+        {brands.map((brand) => (
+          <div class="partner-slide flex flex-shrink-0 snap-start items-center justify-center">
+            <Image
+              class="h-20 w-auto object-contain sm:h-24"
+              src={brand.logo ?? ''}
+              alt={brand.alt ?? ''}
+              width={220}
+              height={90}
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        class="partners-nav partners-nav--next"
+        type="button"
+        aria-label="Ver más partners"
+        data-partners-nav="next"
+      >
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="m7.5 4.5 5 5.5-5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
     <noscript>
       <div class="mx-auto mt-10 grid grid-cols-2 items-center gap-x-4 gap-y-10 sm:grid-cols-5 lg:grid-cols-5">
         {brands.map((brand) => (
@@ -105,7 +118,152 @@ const brands = [
   </div>
 </div>
 
+<style>
+  .partners-slider {
+    padding: 0 3.5rem;
+  }
+
+  .partners-track {
+    padding: 0.75rem 0;
+    scrollbar-width: none;
+  }
+
+  .partners-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .partner-slide {
+    flex-basis: calc((100% - 1rem) / 2);
+  }
+
+  @media (min-width: 640px) {
+    .partner-slide {
+      flex-basis: calc((100% - 2rem) / 3);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .partner-slide {
+      flex-basis: calc((100% - 3rem) / 4);
+    }
+  }
+
+  .partners-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 46px;
+    width: 46px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.92);
+    border: 2px solid #20B3C2;
+    color: #20B3C2;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .partners-nav:hover {
+    background-color: #20B3C2;
+    color: #ffffff;
+  }
+
+  .partners-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .partners-nav--prev {
+    left: 0.5rem;
+  }
+
+  .partners-nav--next {
+    right: 0.5rem;
+  }
+
+  [data-partners-overflow='false'] .partners-nav {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .partners-slider {
+      padding: 0 2.75rem;
+    }
+
+    .partners-nav {
+      height: 42px;
+      width: 42px;
+    }
+  }
+</style>
+
 <script type="module">
-  import { register } from 'swiper/element/bundle';
-  register();
+  if (typeof window !== 'undefined') {
+    const sliders = document.querySelectorAll('[data-partners-slider]');
+    sliders.forEach((slider) => {
+      const track = slider.querySelector('[data-partners-track]');
+      const buttons = slider.querySelectorAll('[data-partners-nav]');
+
+      if (!(track instanceof HTMLElement) || buttons.length === 0) return;
+      const slides = Array.from(track.children);
+
+      const getGap = () => {
+        const styles = window.getComputedStyle(track);
+        const gapValue = parseFloat(styles.columnGap || styles.gap || '0');
+        return Number.isNaN(gapValue) ? 0 : gapValue;
+      };
+
+      const getStep = () => {
+        const firstSlide = slides[0];
+        if (!firstSlide) return track.clientWidth;
+        return firstSlide.getBoundingClientRect().width + getGap();
+      };
+
+      const clampScroll = () => {
+        const maxScroll = track.scrollWidth - track.clientWidth - 1;
+        const canScroll = maxScroll > 0;
+        slider.setAttribute('data-partners-overflow', canScroll ? 'true' : 'false');
+        buttons.forEach((button) => {
+          const direction = button.getAttribute('data-partners-nav');
+          if (!canScroll) {
+            button.setAttribute('disabled', 'true');
+            return;
+          }
+          button.removeAttribute('disabled');
+          if (direction === 'prev') {
+            if (track.scrollLeft <= 1) {
+              button.setAttribute('disabled', 'true');
+            } else {
+              button.removeAttribute('disabled');
+            }
+          } else if (direction === 'next') {
+            if (track.scrollLeft >= maxScroll) {
+              button.setAttribute('disabled', 'true');
+            } else {
+              button.removeAttribute('disabled');
+            }
+          }
+        });
+      };
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const direction = button.getAttribute('data-partners-nav') === 'next' ? 1 : -1;
+          track.scrollBy({
+            left: direction * getStep(),
+            behavior: 'smooth'
+          });
+        });
+      });
+
+      const handleScroll = () => clampScroll();
+      const handleResize = () => clampScroll();
+
+      track.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('load', clampScroll);
+
+      requestAnimationFrame(clampScroll);
+    });
+  }
 </script>

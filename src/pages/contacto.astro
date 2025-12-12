@@ -1,7 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const recaptchaKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+// Access key de Web3Forms
+const WEB3FORMS_ACCESS_KEY = "f3f8b80a-7457-4438-bbe9-ad2de28b6a8a";
 
 const contactInfo = [
   {
@@ -52,28 +53,38 @@ const branchLocations = [
   image="/image-service-01.webp"
 >
   <Fragment slot="head">
-    {recaptchaKey && (
-      <script
-        src="https://www.google.com/recaptcha/api.js"
-        async
-        defer
-      ></script>
-    )}
-    <script define:vars={{ recaptchaKey }}>
-      const SUBMIT_ENDPOINT = "/api/contact-submit";
+    <script define:vars={{ accessKey: WEB3FORMS_ACCESS_KEY }}>
+      const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
+      const isDev = import.meta.env.DEV;
 
+      // Utilidad para logging condicional
+      const log = (...args) => {
+        if (isDev) console.log(...args);
+      };
+      const logError = (...args) => {
+        if (isDev) console.error(...args);
+      };
+
+      // Función para deshabilitar/habilitar el formulario
       const toggleDisabled = (form, disabled) => {
-        form.querySelectorAll("input, textarea, button").forEach((el) => {
+        if (!form) return;
+        const elements = form.querySelectorAll("input, textarea, button");
+        elements.forEach((el) => {
           if (disabled) {
             el.setAttribute("disabled", "true");
+            el.setAttribute("aria-disabled", "true");
           } else {
             el.removeAttribute("disabled");
+            el.removeAttribute("aria-disabled");
           }
         });
       };
 
+      // Función para mostrar estados del formulario
       const setStatus = (element, message, type) => {
         if (!element) return;
+        
+        // Limpiar clases anteriores
         element.classList.remove(
           "hidden",
           "bg-blue-50",
@@ -95,89 +106,194 @@ const branchLocations = [
 
         element.classList.add(...(typeToClasses[type] ?? typeToClasses.info));
         const textNode = element.querySelector("span");
-        if (textNode) textNode.textContent = message;
+        if (textNode) {
+          textNode.textContent = message;
+        }
+        
+        // Scroll suave al mensaje de estado
+        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      };
+
+      // Validación mejorada de email
+      const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      };
+
+      // Validación mejorada de teléfono (formato chileno)
+      const isValidPhone = (phone) => {
+        // Acepta formatos: +56912345678, 56912345678, 912345678, etc.
+        const phoneRegex = /^(\+?56)?[9]\d{8}$/;
+        const cleaned = phone.replace(/\s|-|\(|\)/g, "");
+        return phoneRegex.test(cleaned);
       };
 
       document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("contact-form");
         const statusBox = document.getElementById("form-status");
-        const tokenField = document.getElementById("recaptcha-token");
+        const submitButton = form?.querySelector('button[type="submit"]');
 
-        if (!form || !statusBox || !tokenField) {
-          console.error("No se encontraron los elementos del formulario.");
+        if (!form || !statusBox) {
+          logError("No se encontraron los elementos del formulario.");
           return;
         }
 
-        if (!recaptchaKey) {
-          toggleDisabled(form, true);
-          setStatus(
-            statusBox,
-            "Falta configurar reCAPTCHA. Revisa la variable PUBLIC_RECAPTCHA_SITE_KEY.",
-            "error"
-          );
-          return;
-        }
-
+        // Prellenar campos desde URL params (útil para tracking)
         const params = new URLSearchParams(window.location.search);
         params.forEach((value, key) => {
           const field = form.querySelector(`[name="${key}"]`);
-          if (field && typeof value === "string") field.value = value;
+          if (field && typeof value === "string") {
+            field.value = decodeURIComponent(value);
+          }
         });
 
         const showStatus = (message, type) => setStatus(statusBox, message, type);
 
+        // Validación en tiempo real
+        const nameInput = form.querySelector('[name="name"]');
+        const emailInput = form.querySelector('[name="email"]');
+        const phoneInput = form.querySelector('[name="phone"]');
+        const messageInput = form.querySelector('[name="message"]');
+
+        // Validación de email
+        emailInput?.addEventListener("blur", () => {
+          const email = emailInput.value.trim();
+          if (email && !isValidEmail(email)) {
+            emailInput.setCustomValidity("Por favor, ingresa un correo electrónico válido.");
+            emailInput.classList.add("border-red-300");
+          } else {
+            emailInput.setCustomValidity("");
+            emailInput.classList.remove("border-red-300");
+          }
+        });
+
+        // Validación de teléfono
+        phoneInput?.addEventListener("blur", () => {
+          const phone = phoneInput.value.trim();
+          if (phone && !isValidPhone(phone)) {
+            phoneInput.setCustomValidity("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).");
+            phoneInput.classList.add("border-red-300");
+          } else {
+            phoneInput.setCustomValidity("");
+            phoneInput.classList.remove("border-red-300");
+          }
+        });
+
+        // Limpiar clases de error al escribir
+        [nameInput, emailInput, phoneInput, messageInput].forEach((input) => {
+          input?.addEventListener("input", () => {
+            input.classList.remove("border-red-300");
+            input.setCustomValidity("");
+          });
+        });
+
+        // Manejo del envío del formulario
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
-          if (!form.reportValidity()) return;
+          
+          // Validación HTML5 nativa
+          if (!form.reportValidity()) {
+            showStatus("Por favor, completa todos los campos correctamente.", "error");
+            return;
+          }
 
+          // Validaciones adicionales
+          const formData = new FormData(form);
+          const name = formData.get("name")?.toString().trim() || "";
+          const email = formData.get("email")?.toString().trim() || "";
+          const phone = formData.get("phone")?.toString().trim() || "";
+          const message = formData.get("message")?.toString().trim() || "";
+
+          if (name.length < 2) {
+            showStatus("El nombre debe tener al menos 2 caracteres.", "error");
+            nameInput?.focus();
+            return;
+          }
+
+          if (!isValidEmail(email)) {
+            showStatus("Por favor, ingresa un correo electrónico válido.", "error");
+            emailInput?.focus();
+            return;
+          }
+
+          if (!isValidPhone(phone)) {
+            showStatus("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).", "error");
+            phoneInput?.focus();
+            return;
+          }
+
+          if (message.length < 10) {
+            showStatus("El mensaje debe tener al menos 10 caracteres.", "error");
+            messageInput?.focus();
+            return;
+          }
+
+          // Deshabilitar formulario durante el envío
           toggleDisabled(form, true);
+          const originalButtonText = submitButton?.textContent || "Enviar mensaje";
+          if (submitButton) {
+            submitButton.textContent = "Enviando...";
+            submitButton.setAttribute("aria-busy", "true");
+          }
           showStatus("Enviando mensaje...", "info");
 
           try {
-            const formData = new FormData(form);
-            const recaptchaResponse = window.grecaptcha.getResponse();
-            
-            if (!recaptchaResponse) {
-              showStatus("Por favor, completa el captcha", "error");
-              toggleDisabled(form, false);
-              return;
+            // Preparar datos para Web3Forms
+            const payload = {
+              access_key: accessKey,
+              subject: `Nuevo mensaje de contacto - ${name}`,
+              from_name: name,
+              email: email,
+              phone: phone,
+              message: message,
+              // Campos adicionales para mejor organización
+              form_name: "Contacto - Automotive Consulting",
+              // Prevenir spam
+              botcheck: "",
+            };
+
+            log("Enviando formulario a Web3Forms:", payload);
+
+            const response = await fetch(WEB3FORMS_ENDPOINT, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(
+                result.message || "No se pudo enviar tu mensaje. Por favor, intenta nuevamente."
+              );
             }
 
-            const body = Object.fromEntries(formData.entries());
-            body["g-recaptcha-response"] = recaptchaResponse;
+            log("Formulario enviado exitosamente:", result);
 
-                  const response = await fetch(SUBMIT_ENDPOINT, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body),
-                  });
+            // Mostrar mensaje de éxito
+            showStatus("¡Mensaje enviado exitosamente! Te responderemos pronto.", "success");
 
-                  if (!response.ok) {
-                    const error = await response.json().catch(() => null);
-                    throw new Error(error?.error || "No se pudo enviar tu mensaje.");
-                  }
-
-                  const nameField = form.querySelector('[name="name"]');
-                  const nameValue =
-                    nameField && "value" in nameField && typeof nameField.value === "string"
-                      ? nameField.value
-                      : "";
-                  window.location.href = `/gracias?name=${encodeURIComponent(nameValue)}`;
-                } catch (error) {
-                  console.error("Error al enviar el formulario:", error);
-                  showStatus(
-                    error instanceof Error ? error.message : "Intenta nuevamente en unos minutos.",
-                    "error"
-                  );
-                  toggleDisabled(form, false);
-                }
-              })
-              .catch((error) => {
-                console.error("Error reCAPTCHA:", error);
-                showStatus("No pudimos validar reCAPTCHA. Inténtalo otra vez.", "error");
-                toggleDisabled(form, false);
-              });
-          });
+            // Redirigir después de 2 segundos
+            setTimeout(() => {
+              window.location.href = `/gracias?name=${encodeURIComponent(name)}`;
+            }, 2000);
+          } catch (error) {
+            logError("Error al enviar el formulario:", error);
+            showStatus(
+              error instanceof Error
+                ? error.message
+                : "Ocurrió un error al enviar tu mensaje. Por favor, intenta nuevamente o contáctanos directamente.",
+              "error"
+            );
+            toggleDisabled(form, false);
+            if (submitButton) {
+              submitButton.textContent = originalButtonText;
+              submitButton.removeAttribute("aria-busy");
+            }
+          }
         });
       });
     </script>
@@ -203,7 +319,9 @@ const branchLocations = [
         <form
           id="contact-form"
           method="POST"
+          action="https://api.web3forms.com/submit"
           class="space-y-6 rounded-2xl border border-gray-100 p-8 shadow-lg"
+          novalidate
         >
           <div class="space-y-3">
             <h2 class="text-3xl font-semibold text-gray-900">Envíanos un mensaje</h2>
@@ -212,6 +330,12 @@ const branchLocations = [
             </p>
           </div>
 
+          <!-- Campo oculto para access key -->
+          <input type="hidden" name="access_key" value={WEB3FORMS_ACCESS_KEY} />
+          <input type="hidden" name="subject" value="Nuevo mensaje de contacto - Automotive Consulting" />
+          <input type="hidden" name="form_name" value="Contacto - Automotive Consulting" />
+          <input type="checkbox" name="botcheck" class="hidden" style="display: none;" />
+
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
             Nombre completo
             <input
@@ -219,10 +343,14 @@ const branchLocations = [
               name="name"
               required
               minlength="2"
+              maxlength="100"
               autocomplete="name"
               placeholder="Ej. Juan Pérez"
-              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400"
+              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 focus:outline-none"
+              aria-required="true"
+              aria-describedby="name-error"
             />
+            <span id="name-error" class="text-red-600 text-xs hidden" role="alert"></span>
           </label>
 
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
@@ -233,8 +361,13 @@ const branchLocations = [
               required
               autocomplete="tel"
               placeholder="+56 9 1234 5678"
-              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400"
+              pattern="^(\+?56)?[9]\d{8}$"
+              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 focus:outline-none"
+              aria-required="true"
+              aria-describedby="phone-error"
             />
+            <span id="phone-error" class="text-red-600 text-xs hidden" role="alert"></span>
+            <span class="text-xs text-gray-500">Formato: +56 9 1234 5678</span>
           </label>
 
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
@@ -245,12 +378,15 @@ const branchLocations = [
               required
               autocomplete="email"
               placeholder="nombre@empresa.cl"
-              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400"
+              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 focus:outline-none"
+              aria-required="true"
+              aria-describedby="email-error"
             />
+            <span id="email-error" class="text-red-600 text-xs hidden" role="alert"></span>
           </label>
 
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
-            Mensajej
+            Mensaje
             <textarea
               name="message"
               rows="5"
@@ -258,25 +394,27 @@ const branchLocations = [
               minlength="10"
               maxlength="1200"
               placeholder="Cuéntanos cómo podemos ayudarte."
-              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 resize-none"
+              class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 resize-none focus:outline-none"
+              aria-required="true"
+              aria-describedby="message-error"
             ></textarea>
+            <span id="message-error" class="text-red-600 text-xs hidden" role="alert"></span>
+            <span class="text-xs text-gray-500">Mínimo 10 caracteres, máximo 1200</span>
           </label>
-
-          <div class="g-recaptcha mb-4" data-sitekey={recaptchaKey}></div>
 
           <div
             id="form-status"
             class="hidden rounded-xl border px-4 py-3 text-sm font-medium"
             aria-live="polite"
+            role="alert"
           >
             <span></span>
           </div>
 
-          <p class="text-xs text-gray-400">Este sitio está protegido por reCAPTCHA.</p>
-
           <button
             type="submit"
-            class="w-full rounded-xl bg-teal-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            class="w-full rounded-xl bg-teal-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-teal-500"
+            aria-label="Enviar mensaje de contacto"
           >
             Enviar mensaje
           </button>
@@ -286,9 +424,18 @@ const branchLocations = [
           <div class="space-y-4">
             <h3 class="text-2xl font-semibold text-gray-900">¿Qué pasa después?</h3>
             <ul class="space-y-3 text-gray-600">
-              <li>• Revisamos tu mensaje y te respondemos en menos de 24 horas hábiles.</li>
-              <li>• Coordinamos una llamada o visita según tu preferencia.</li>
-              <li>• Acompañamos todo el proceso de compra o venta de tu vehículo.</li>
+              <li class="flex items-start gap-2">
+                <span class="text-teal-500 mt-1">✓</span>
+                <span>Revisamos tu mensaje y te respondemos en menos de 24 horas hábiles.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-teal-500 mt-1">✓</span>
+                <span>Coordinamos una llamada o visita según tu preferencia.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-teal-500 mt-1">✓</span>
+                <span>Acompañamos todo el proceso de compra o venta de tu vehículo.</span>
+              </li>
             </ul>
           </div>
 
@@ -300,7 +447,7 @@ const branchLocations = [
               href="https://maps.google.com/?q=Camino+El+Alba+8760,+Las+Condes"
               target="_blank"
               rel="noreferrer noopener"
-              class="inline-flex items-center gap-2 text-teal-600 font-medium hover:text-teal-500"
+              class="inline-flex items-center gap-2 text-teal-600 font-medium hover:text-teal-500 transition-colors"
             >
               <i class="fas fa-map-marker-alt"></i> Abrir en Google Maps
             </a>
@@ -376,3 +523,22 @@ const branchLocations = [
     </div>
   </section>
 </Layout>
+
+<style>
+  /* Estilos para campos con error */
+  input:invalid:not(:focus):not(:placeholder-shown),
+  textarea:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: #ef4444;
+  }
+
+  /* Animación suave para el estado del formulario */
+  #form-status {
+    transition: all 0.3s ease-in-out;
+  }
+
+  /* Mejora de accesibilidad */
+  button:focus-visible {
+    outline: 2px solid #14b8a6;
+    outline-offset: 2px;
+  }
+</style>

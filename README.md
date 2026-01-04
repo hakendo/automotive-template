@@ -20,7 +20,7 @@
 🔍 **Búsqueda Inteligente** - Encuentra el vehículo perfecto rápidamente  
 📱 **Mobile-First** - Optimizado para dispositivos móviles  
 ⚡ **Carga Ultrarrápida** - Powered by Astro SSR  
-💌 **Sistema de Contacto** - Backend propio con reCAPTCHA v2 y envío por Resend  
+💌 **Sistema de Contacto** - Backend propio con envío por Brevo y confirmación automática  
 🛡️ **Anti-Spam** - Protección con reCAPTCHA  
 🎯 **SEO Optimizado** - Mejor posicionamiento en buscadores  
 🤝 **Partner Confiable** - Más que una automotora, tu aliado automotriz
@@ -39,8 +39,7 @@
 
 ### **Backend & APIs**
 
-- **[Resend](https://resend.com/)** - Envío de correos transaccionales
-- **[reCAPTCHA](https://developers.google.com/recaptcha)** - Protección anti-spam
+- **[Brevo](https://www.brevo.com/)** - Envío de correos transaccionales
 - **[Astro Node 9.3.0](https://docs.astro.build/en/guides/integrations-guide/node/)** - Servidor SSR
 
 ### **Herramientas**
@@ -76,12 +75,8 @@ npm install
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
-# 🛡️ reCAPTCHA v2 (casilla de verificación)
-PUBLIC_RECAPTCHA_SITE_KEY="tu_site_key_recaptcha_v2"
-RECAPTCHA_SECRET_KEY="tu_secret_key_recaptcha_v2"
-
-# 💌 Envío de correos con Resend
-RESEND_API_KEY="tu_api_key_resend"
+# 💌 Envío de correos con Brevo
+BREVO_API_KEY="tu_api_key_brevo"
 
 # 🔑 Token de API (para datos de vehículos)
 PUBLIC_TOKEN="tu_public_token_aqui"

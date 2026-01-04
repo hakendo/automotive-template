@@ -1,8 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-// Access key de Web3Forms
-const WEB3FORMS_ACCESS_KEY = "f3f8b80a-7457-4438-bbe9-ad2de28b6a8a";
+const CONTACT_API_ENDPOINT = "/api/contact";
 
 const contactInfo = [
   {
@@ -53,260 +52,129 @@ const branchLocations = [
   image="/image-service-01.webp"
 >
   <Fragment slot="head">
-    <script define:vars={{ accessKey: WEB3FORMS_ACCESS_KEY }}>
-      const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
-      const isDev = import.meta.env.DEV;
+    <style>
+      /* Estilos para campos con error */
+      input:invalid:not(:focus):not(:placeholder-shown),
+      textarea:invalid:not(:focus):not(:placeholder-shown) {
+        border-color: #ef4444;
+      }
 
-      // Utilidad para logging condicional
-      const log = (...args) => {
-        if (isDev) console.log(...args);
-      };
-      const logError = (...args) => {
-        if (isDev) console.error(...args);
-      };
+      /* Animación suave para el estado del formulario */
+      #form-status {
+        transition: all 0.3s ease-in-out;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      
+      #form-status:not(.hidden) {
+        display: flex !important;
+      }
+      
+      #form-status.hidden {
+        display: none !important;
+      }
 
-      // Función para deshabilitar/habilitar el formulario
-      const toggleDisabled = (form, disabled) => {
-        if (!form) return;
-        const elements = form.querySelectorAll("input, textarea, button");
-        elements.forEach((el) => {
-          if (disabled) {
-            el.setAttribute("disabled", "true");
-            el.setAttribute("aria-disabled", "true");
-          } else {
-            el.removeAttribute("disabled");
-            el.removeAttribute("aria-disabled");
-          }
-        });
-      };
-
-      // Función para mostrar estados del formulario
-      const setStatus = (element, message, type) => {
-        if (!element) return;
-        
-        // Limpiar clases anteriores
-        element.classList.remove(
-          "hidden",
-          "bg-blue-50",
-          "bg-green-50",
-          "bg-red-50",
-          "text-blue-700",
-          "text-green-700",
-          "text-red-700",
-          "border-blue-200",
-          "border-green-200",
-          "border-red-200"
-        );
-
-        const typeToClasses = {
-          info: ["bg-blue-50", "text-blue-700", "border-blue-200"],
-          success: ["bg-green-50", "text-green-700", "border-green-200"],
-          error: ["bg-red-50", "text-red-700", "border-red-200"],
-        };
-
-        element.classList.add(...(typeToClasses[type] ?? typeToClasses.info));
-        const textNode = element.querySelector("span");
-        if (textNode) {
-          textNode.textContent = message;
+      /* Estilos del modal */
+      #contact-modal {
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      #contact-modal > div {
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
         }
-        
-        // Scroll suave al mensaje de estado
-        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      };
-
-      // Validación mejorada de email
-      const isValidEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-      };
-
-      // Validación mejorada de teléfono (formato chileno)
-      const isValidPhone = (phone) => {
-        // Acepta formatos: +56912345678, 56912345678, 912345678, etc.
-        const phoneRegex = /^(\+?56)?[9]\d{8}$/;
-        const cleaned = phone.replace(/\s|-|\(|\)/g, "");
-        return phoneRegex.test(cleaned);
-      };
-
-      document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById("contact-form");
-        const statusBox = document.getElementById("form-status");
-        const submitButton = form?.querySelector('button[type="submit"]');
-
-        if (!form || !statusBox) {
-          logError("No se encontraron los elementos del formulario.");
-          return;
+        to {
+          opacity: 1;
         }
+      }
+      
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      /* Animación del spinner */
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+      
+      /* Animación de éxito (checkmark) */
+      #modal-success svg {
+        animation: checkmark 0.5s ease-out;
+      }
+      
+      @keyframes checkmark {
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      
+      /* Animación de error (X) */
+      #modal-error svg {
+        animation: errorShake 0.5s ease-out;
+      }
+      
+      @keyframes errorShake {
+        0%, 100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+      }
 
-        // Prellenar campos desde URL params (útil para tracking)
-        const params = new URLSearchParams(window.location.search);
-        params.forEach((value, key) => {
-          const field = form.querySelector(`[name="${key}"]`);
-          if (field && typeof value === "string") {
-            field.value = decodeURIComponent(value);
-          }
-        });
-
-        const showStatus = (message, type) => setStatus(statusBox, message, type);
-
-        // Validación en tiempo real
-        const nameInput = form.querySelector('[name="name"]');
-        const emailInput = form.querySelector('[name="email"]');
-        const phoneInput = form.querySelector('[name="phone"]');
-        const messageInput = form.querySelector('[name="message"]');
-
-        // Validación de email
-        emailInput?.addEventListener("blur", () => {
-          const email = emailInput.value.trim();
-          if (email && !isValidEmail(email)) {
-            emailInput.setCustomValidity("Por favor, ingresa un correo electrónico válido.");
-            emailInput.classList.add("border-red-300");
-          } else {
-            emailInput.setCustomValidity("");
-            emailInput.classList.remove("border-red-300");
-          }
-        });
-
-        // Validación de teléfono
-        phoneInput?.addEventListener("blur", () => {
-          const phone = phoneInput.value.trim();
-          if (phone && !isValidPhone(phone)) {
-            phoneInput.setCustomValidity("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).");
-            phoneInput.classList.add("border-red-300");
-          } else {
-            phoneInput.setCustomValidity("");
-            phoneInput.classList.remove("border-red-300");
-          }
-        });
-
-        // Limpiar clases de error al escribir
-        [nameInput, emailInput, phoneInput, messageInput].forEach((input) => {
-          input?.addEventListener("input", () => {
-            input.classList.remove("border-red-300");
-            input.setCustomValidity("");
-          });
-        });
-
-        // Manejo del envío del formulario
-        form.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          
-          // Validación HTML5 nativa
-          if (!form.reportValidity()) {
-            showStatus("Por favor, completa todos los campos correctamente.", "error");
-            return;
-          }
-
-          // Validaciones adicionales
-          const formData = new FormData(form);
-          const name = formData.get("name")?.toString().trim() || "";
-          const email = formData.get("email")?.toString().trim() || "";
-          const phone = formData.get("phone")?.toString().trim() || "";
-          const message = formData.get("message")?.toString().trim() || "";
-
-          if (name.length < 2) {
-            showStatus("El nombre debe tener al menos 2 caracteres.", "error");
-            nameInput?.focus();
-            return;
-          }
-
-          if (!isValidEmail(email)) {
-            showStatus("Por favor, ingresa un correo electrónico válido.", "error");
-            emailInput?.focus();
-            return;
-          }
-
-          if (!isValidPhone(phone)) {
-            showStatus("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).", "error");
-            phoneInput?.focus();
-            return;
-          }
-
-          if (message.length < 10) {
-            showStatus("El mensaje debe tener al menos 10 caracteres.", "error");
-            messageInput?.focus();
-            return;
-          }
-
-          // Deshabilitar formulario durante el envío
-          toggleDisabled(form, true);
-          const originalButtonText = submitButton?.textContent || "Enviar mensaje";
-          if (submitButton) {
-            submitButton.textContent = "Enviando...";
-            submitButton.setAttribute("aria-busy", "true");
-          }
-          showStatus("Enviando mensaje...", "info");
-
-          try {
-            // Preparar datos para Web3Forms
-            const payload = {
-              access_key: accessKey,
-              subject: `Nuevo mensaje de contacto - ${name}`,
-              from_name: name,
-              email: email,
-              phone: phone,
-              message: message,
-              // Campos adicionales para mejor organización
-              form_name: "Contacto - Automotive Consulting",
-              // Prevenir spam
-              botcheck: "",
-            };
-
-            log("Enviando formulario a Web3Forms:", payload);
-
-            const response = await fetch(WEB3FORMS_ENDPOINT, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify(payload),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || !result.success) {
-              throw new Error(
-                result.message || "No se pudo enviar tu mensaje. Por favor, intenta nuevamente."
-              );
-            }
-
-            log("Formulario enviado exitosamente:", result);
-
-            // Mostrar mensaje de éxito
-            showStatus("¡Mensaje enviado exitosamente! Te responderemos pronto.", "success");
-
-            // Redirigir después de 2 segundos
-            setTimeout(() => {
-              window.location.href = `/gracias?name=${encodeURIComponent(name)}`;
-            }, 2000);
-          } catch (error) {
-            logError("Error al enviar el formulario:", error);
-            showStatus(
-              error instanceof Error
-                ? error.message
-                : "Ocurrió un error al enviar tu mensaje. Por favor, intenta nuevamente o contáctanos directamente.",
-              "error"
-            );
-            toggleDisabled(form, false);
-            if (submitButton) {
-              submitButton.textContent = originalButtonText;
-              submitButton.removeAttribute("aria-busy");
-            }
-          }
-        });
-      });
-    </script>
+      /* Mejora de accesibilidad */
+      button:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+      }
+      
+      /* Prevenir scroll cuando el modal está abierto */
+      body.modal-open {
+        overflow: hidden;
+      }
+    </style>
   </Fragment>
 
   <section class="bg-gray-900 text-white">
-    <div class="max-w-5xl mx-auto px-6 py-20 lg:py-28 flex flex-col gap-10">
-      <div class="space-y-4 text-center md:text-left">
-        <p class="uppercase tracking-[0.45em] text-sm text-gray-400">Contacto</p>
-        <h1 class="text-4xl md:text-5xl font-semibold leading-tight">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20 xl:py-28 flex flex-col gap-6 sm:gap-8 lg:gap-10">
+      <div class="space-y-3 sm:space-y-4 text-center md:text-left">
+        <p class="uppercase tracking-[0.45em] text-xs sm:text-sm text-gray-400">Contacto</p>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-semibold leading-tight">
           Hablemos de tu próximo automóvil o venta segura
         </h1>
-        <p class="text-gray-300 text-lg md:text-xl">
+        <p class="text-gray-300 text-base sm:text-lg md:text-xl">
           Completa el formulario y te responderemos en menos de 24 horas hábiles.
         </p>
       </div>
@@ -314,27 +182,21 @@ const branchLocations = [
   </section>
 
   <section class="bg-white">
-    <div class="max-w-5xl mx-auto px-6 py-16 lg:py-20">
-      <div class="grid gap-16 lg:grid-cols-2">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
+      <div class="grid gap-8 sm:gap-12 lg:gap-16 lg:grid-cols-2">
         <form
           id="contact-form"
           method="POST"
-          action="https://api.web3forms.com/submit"
-          class="space-y-6 rounded-2xl border border-gray-100 p-8 shadow-lg"
+          action="#"
+          class="space-y-5 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-lg"
           novalidate
         >
-          <div class="space-y-3">
-            <h2 class="text-3xl font-semibold text-gray-900">Envíanos un mensaje</h2>
-            <p class="text-gray-600">
+          <div class="space-y-2 sm:space-y-3">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-gray-900">Envíanos un mensaje</h2>
+            <p class="text-sm sm:text-base text-gray-600">
               Todos los campos son obligatorios para poder atenderte correctamente.
             </p>
           </div>
-
-          <!-- Campo oculto para access key -->
-          <input type="hidden" name="access_key" value={WEB3FORMS_ACCESS_KEY} />
-          <input type="hidden" name="subject" value="Nuevo mensaje de contacto - Automotive Consulting" />
-          <input type="hidden" name="form_name" value="Contacto - Automotive Consulting" />
-          <input type="checkbox" name="botcheck" class="hidden" style="display: none;" />
 
           <label class="flex flex-col gap-2 text-sm font-medium text-gray-800">
             Nombre completo
@@ -361,7 +223,6 @@ const branchLocations = [
               required
               autocomplete="tel"
               placeholder="+56 9 1234 5678"
-              pattern="^(\+?56)?[9]\d{8}$"
               class="rounded-xl border border-gray-200 px-4 py-3 text-gray-900 transition focus:border-transparent focus:ring-2 focus:ring-teal-400 focus:outline-none"
               aria-required="true"
               aria-describedby="phone-error"
@@ -402,6 +263,85 @@ const branchLocations = [
             <span class="text-xs text-gray-500">Mínimo 10 caracteres, máximo 1200</span>
           </label>
 
+          <!-- Modal de estado del envío -->
+          <div
+            id="contact-modal"
+            class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="modal-title"
+          >
+            <div class="relative mx-4 w-full max-w-md rounded-xl sm:rounded-2xl bg-white p-6 sm:p-8 shadow-2xl transform transition-all">
+              <!-- Botón cerrar -->
+              <button
+                id="close-modal"
+                class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+
+              <!-- Contenido del modal -->
+              <div id="modal-content" class="text-center">
+                <!-- Estado: Enviando -->
+                <div id="modal-sending" class="hidden">
+                  <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-teal-100">
+                    <svg class="h-10 w-10 animate-spin text-teal-600" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <h3 id="modal-title" class="mb-2 text-2xl font-semibold text-gray-900">Enviando mensaje...</h3>
+                  <p class="text-gray-600">Por favor espera mientras procesamos tu solicitud.</p>
+                </div>
+
+                <!-- Estado: Éxito -->
+                <div id="modal-success" class="hidden">
+                  <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                    <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <h3 id="modal-title-success" class="mb-2 text-2xl font-semibold text-gray-900">¡Mensaje enviado!</h3>
+                  <p class="mb-6 text-gray-600">Tu mensaje ha sido enviado correctamente. Revisa tu correo para la confirmación.</p>
+                  <button
+                    id="modal-success-button"
+                    class="w-full rounded-xl bg-teal-500 px-6 py-3 font-semibold text-white transition hover:bg-teal-400"
+                  >
+                    Continuar
+                  </button>
+                </div>
+
+                <!-- Estado: Error -->
+                <div id="modal-error" class="hidden">
+                  <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+                    <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </div>
+                  <h3 id="modal-title-error" class="mb-2 text-2xl font-semibold text-gray-900">Error al enviar</h3>
+                  <p id="modal-error-message" class="mb-6 text-gray-600">No se pudo enviar tu mensaje. Por favor, intenta nuevamente.</p>
+                  <div class="flex gap-3">
+                    <button
+                      id="modal-retry-button"
+                      class="flex-1 rounded-xl bg-teal-500 px-6 py-3 font-semibold text-white transition hover:bg-teal-400"
+                    >
+                      Reintentar
+                    </button>
+                    <button
+                      id="modal-close-error-button"
+                      class="flex-1 rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div
             id="form-status"
             class="hidden rounded-xl border px-4 py-3 text-sm font-medium"
@@ -412,18 +352,19 @@ const branchLocations = [
           </div>
 
           <button
-            type="submit"
-            class="w-full rounded-xl bg-teal-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-teal-500"
+            type="button"
+            id="submit-contact-btn"
+            class="w-full rounded-xl bg-teal-500 px-4 py-3 sm:py-3.5 text-base font-semibold text-white transition hover:bg-teal-400 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-teal-500 active:scale-[0.98]"
             aria-label="Enviar mensaje de contacto"
           >
             Enviar mensaje
           </button>
         </form>
 
-        <div class="space-y-8">
-          <div class="space-y-4">
-            <h3 class="text-2xl font-semibold text-gray-900">¿Qué pasa después?</h3>
-            <ul class="space-y-3 text-gray-600">
+        <div class="space-y-6 sm:space-y-8">
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-xl sm:text-2xl font-semibold text-gray-900">¿Qué pasa después?</h3>
+            <ul class="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-600">
               <li class="flex items-start gap-2">
                 <span class="text-teal-500 mt-1">✓</span>
                 <span>Revisamos tu mensaje y te respondemos en menos de 24 horas hábiles.</span>
@@ -458,16 +399,16 @@ const branchLocations = [
   </section>
 
   <section class="bg-gray-50">
-    <div class="max-w-6xl mx-auto px-6 py-20 space-y-10">
-      <div class="text-center space-y-3">
-        <p class="text-sm uppercase tracking-[0.45em] text-gray-500">Sucursales</p>
-        <h2 class="text-3xl font-semibold text-gray-900">Visítanos cuando quieras</h2>
-        <p class="text-gray-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20 space-y-8 sm:space-y-10">
+      <div class="text-center space-y-2 sm:space-y-3">
+        <p class="text-xs sm:text-sm uppercase tracking-[0.45em] text-gray-500">Sucursales</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold text-gray-900">Visítanos cuando quieras</h2>
+        <p class="text-sm sm:text-base text-gray-600 px-4">
           Elige la sucursal que más te acomode y agenda una reunión con nuestro equipo.
         </p>
       </div>
 
-      <div class="grid gap-8 lg:grid-cols-3">
+      <div class="grid gap-6 sm:gap-8 lg:grid-cols-3">
         {branchLocations.map((branch) => (
           <div class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-lg">
             <div class="p-6 space-y-2">
@@ -491,16 +432,16 @@ const branchLocations = [
   </section>
 
   <section class="bg-gray-900 text-white">
-    <div class="max-w-5xl mx-auto px-6 py-16 space-y-6">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-6">
       <div class="space-y-2 text-center">
-        <p class="text-sm uppercase tracking-[0.45em] text-gray-400">Contacto directo</p>
-        <h2 class="text-3xl font-semibold">¿Prefieres hablar de inmediato?</h2>
-        <p class="text-gray-300">
+        <p class="text-xs sm:text-sm uppercase tracking-[0.45em] text-gray-400">Contacto directo</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold">¿Prefieres hablar de inmediato?</h2>
+        <p class="text-sm sm:text-base text-gray-300 px-4">
           Usa cualquiera de estos canales y coordinaremos contigo el seguimiento.
         </p>
       </div>
 
-      <div class="grid gap-6 sm:grid-cols-3">
+      <div class="grid gap-4 sm:gap-6 sm:grid-cols-3">
         {contactInfo.map((info) => (
           <a
             href={info.href}
@@ -522,23 +463,610 @@ const branchLocations = [
       </div>
     </div>
   </section>
+
+  <!-- Script principal al final para mejor timing -->
+  <script define:vars={{ apiEndpoint: CONTACT_API_ENDPOINT }}>
+    // Ejecutar inmediatamente para verificar que el script se carga
+    (function() {
+      console.log("=== SCRIPT DE CONTACTO CARGADO ===");
+      console.log("API Endpoint:", typeof apiEndpoint !== 'undefined' ? apiEndpoint : 'NO DEFINIDO');
+      console.log("Timestamp:", new Date().toISOString());
+    })();
+    
+    // Utilidad para logging condicional - siempre activo para debug
+    const log = (...args) => {
+      console.log(...args);
+    };
+    const logError = (...args) => {
+      console.error(...args);
+    };
+    
+    console.log("Funciones de log inicializadas");
+
+    // Función para deshabilitar/habilitar el formulario
+    const toggleDisabled = (form, disabled) => {
+      if (!form) return;
+      const elements = form.querySelectorAll("input, textarea, button");
+      elements.forEach((el) => {
+        if (disabled) {
+          el.setAttribute("disabled", "true");
+          el.setAttribute("aria-disabled", "true");
+        } else {
+          el.removeAttribute("disabled");
+          el.removeAttribute("aria-disabled");
+        }
+      });
+    };
+
+    // Función para mostrar estados del formulario
+    const setStatus = (element, message, type) => {
+      console.log("setStatus llamado:", { message, type, element: !!element });
+      
+      if (!element) {
+        console.error("❌ setStatus: elemento no encontrado!");
+        return;
+      }
+      
+      // Limpiar clases anteriores
+      element.classList.remove(
+        "hidden",
+        "bg-blue-50",
+        "bg-green-50",
+        "bg-red-50",
+        "text-blue-700",
+        "text-green-700",
+        "text-red-700",
+        "border-blue-200",
+        "border-green-200",
+        "border-red-200"
+      );
+
+      const typeToClasses = {
+        info: ["bg-blue-50", "text-blue-700", "border-blue-200"],
+        success: ["bg-green-50", "text-green-700", "border-green-200"],
+        error: ["bg-red-50", "text-red-700", "border-red-200"],
+      };
+
+      // Forzar visibilidad con múltiples métodos - eliminar estilos inline que bloqueen
+      element.removeAttribute("style"); // Eliminar cualquier style inline
+      element.style.display = "block !important";
+      element.style.visibility = "visible";
+      element.style.opacity = "1";
+      element.classList.remove("hidden");
+      element.setAttribute("aria-hidden", "false");
+      element.classList.add(...(typeToClasses[type] ?? typeToClasses.info));
+      
+      const textNode = element.querySelector("span");
+      if (textNode) {
+        textNode.textContent = message;
+        console.log("Mensaje agregado al span:", message);
+      } else {
+        element.textContent = message;
+        console.log("Mensaje agregado directamente:", message);
+      }
+      
+      console.log("✅ Mensaje mostrado en UI:", message);
+      console.log("Elemento visible:", element.offsetHeight > 0);
+      console.log("Clases aplicadas:", element.className);
+      
+      // Scroll suave al mensaje de estado
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+    };
+
+    // Validación mejorada de email
+    const isValidEmail = (email) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    };
+
+    // Validación mejorada de teléfono (formato chileno)
+    const isValidPhone = (phone) => {
+      // Acepta formatos: +56912345678, 56912345678, 912345678, etc.
+      const phoneRegex = /^(\+?56)?[9]\d{8}$/;
+      const cleaned = phone.replace(/\s|-|\(|\)/g, "");
+      return phoneRegex.test(cleaned);
+    };
+
+    // Verificar que document existe
+    if (typeof document === 'undefined') {
+      console.error("ERROR: document no está disponible");
+      return;
+    }
+    
+    console.log("=== INICIALIZANDO SCRIPT DE CONTACTO ===");
+    console.log("Document readyState:", document.readyState);
+    
+    // Función para inicializar cuando el DOM esté listo
+    function waitForDOM() {
+      if (document.readyState === 'loading') {
+        console.log("Esperando DOMContentLoaded...");
+        document.addEventListener("DOMContentLoaded", initForm, { once: true });
+      } else if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        console.log("DOM listo, ejecutando inmediatamente");
+        // Usar setTimeout para asegurar que todos los elementos estén renderizados
+        setTimeout(initForm, 0);
+      } else {
+        console.log("Esperando DOM...");
+        setTimeout(waitForDOM, 100);
+      }
+    }
+    
+    waitForDOM();
+    
+    function initForm() {
+      console.log("=== DOMContentLoaded FIRED ===");
+      
+      const form = document.getElementById("contact-form");
+      const statusBox = document.getElementById("form-status");
+      const submitButton = document.getElementById("submit-contact-btn");
+
+      console.log("Elementos encontrados:", {
+        form: !!form,
+        statusBox: !!statusBox,
+        submitButton: !!submitButton
+      });
+
+      if (!form || !statusBox) {
+        console.error("ERROR: No se encontraron los elementos del formulario.");
+        console.error("Form:", form);
+        console.error("StatusBox:", statusBox);
+        return;
+      }
+
+      if (!submitButton) {
+        console.error("ERROR: No se encontró el botón de envío.");
+        console.error("Buscando botón con ID 'submit-contact-btn'");
+        // Intentar encontrar el botón de otra manera
+        const allButtons = document.querySelectorAll("button");
+        console.log("Todos los botones encontrados:", allButtons);
+        return;
+      }
+
+      console.log("Formulario inicializado correctamente");
+      console.log("Botón encontrado:", submitButton);
+      console.log("Botón ID:", submitButton.id);
+      console.log("Botón type:", submitButton.type);
+      console.log("Botón disabled:", submitButton.disabled);
+
+      // Prellenar campos desde URL params (útil para tracking)
+      const params = new URLSearchParams(window.location.search);
+      params.forEach((value, key) => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (field && typeof value === "string") {
+          field.value = decodeURIComponent(value);
+        }
+      });
+
+      const showStatus = (message, type) => setStatus(statusBox, message, type);
+      
+      // Funciones para manejar el modal
+      const modal = document.getElementById("contact-modal");
+      const modalSending = document.getElementById("modal-sending");
+      const modalSuccess = document.getElementById("modal-success");
+      const modalError = document.getElementById("modal-error");
+      const modalErrorMessage = document.getElementById("modal-error-message");
+      
+      const showModal = () => {
+        if (modal) {
+          console.log("🔓 Removiendo clase 'hidden' del modal");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          document.body.classList.add("modal-open");
+          document.body.style.overflow = "hidden";
+          console.log("✅ Modal visible, clases:", modal.className);
+          console.log("✅ Body overflow hidden");
+        } else {
+          console.error("❌ Modal no encontrado en el DOM!");
+        }
+      };
+      
+      const hideModal = () => {
+        if (modal) {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          document.body.classList.remove("modal-open");
+          document.body.style.overflow = "";
+        }
+      };
+      
+      const showModalSending = () => {
+        console.log("🔄 Mostrando modal de envío...");
+        console.log("Modal encontrado:", !!modal);
+        console.log("Modal sending encontrado:", !!modalSending);
+        
+        if (modalSending) {
+          modalSending.classList.remove("hidden");
+          console.log("✅ Modal sending visible");
+        } else {
+          console.error("❌ Modal sending no encontrado!");
+        }
+        
+        if (modalSuccess) modalSuccess.classList.add("hidden");
+        if (modalError) modalError.classList.add("hidden");
+        
+        showModal();
+        console.log("✅ Modal mostrado");
+      };
+      
+      const showModalSuccess = () => {
+        if (modalSending) modalSending.classList.add("hidden");
+        if (modalSuccess) modalSuccess.classList.remove("hidden");
+        if (modalError) modalError.classList.add("hidden");
+      };
+      
+      const showModalError = (message) => {
+        if (modalSending) modalSending.classList.add("hidden");
+        if (modalSuccess) modalSuccess.classList.add("hidden");
+        if (modalError) modalError.classList.remove("hidden");
+        if (modalErrorMessage) {
+          modalErrorMessage.textContent = message || "No se pudo enviar tu mensaje. Por favor, intenta nuevamente.";
+        }
+      };
+      
+      // Exponer función de error globalmente
+      window.showContactError = showModalError;
+      
+      // Event listeners del modal
+      const closeModalBtn = document.getElementById("close-modal");
+      const successButton = document.getElementById("modal-success-button");
+      const retryButton = document.getElementById("modal-retry-button");
+      const closeErrorButton = document.getElementById("modal-close-error-button");
+      
+      closeModalBtn?.addEventListener("click", hideModal);
+      successButton?.addEventListener("click", () => {
+        hideModal();
+        const name = form.querySelector('[name="name"]')?.value || "";
+        window.location.href = `/gracias?name=${encodeURIComponent(name)}`;
+      });
+      closeErrorButton?.addEventListener("click", hideModal);
+      
+      // Cerrar modal al hacer clic fuera
+      modal?.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          hideModal();
+        }
+      });
+      
+      // Validación en tiempo real
+      const nameInput = form.querySelector('[name="name"]');
+      const emailInput = form.querySelector('[name="email"]');
+      const phoneInput = form.querySelector('[name="phone"]');
+      const messageInput = form.querySelector('[name="message"]');
+      
+      // Variable para almacenar los datos del formulario para reintentos
+      let lastFormData = null;
+      
+      // Validación en tiempo real - configurar listeners una sola vez
+      emailInput?.addEventListener("blur", () => {
+        const email = emailInput.value.trim();
+        if (email && !isValidEmail(email)) {
+          emailInput.setCustomValidity("Por favor, ingresa un correo electrónico válido.");
+          emailInput.classList.add("border-red-300");
+        } else {
+          emailInput.setCustomValidity("");
+          emailInput.classList.remove("border-red-300");
+        }
+      });
+
+      phoneInput?.addEventListener("blur", () => {
+        const phone = phoneInput.value.trim();
+        if (phone && !isValidPhone(phone)) {
+          phoneInput.setCustomValidity("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).");
+          phoneInput.classList.add("border-red-300");
+        } else {
+          phoneInput.setCustomValidity("");
+          phoneInput.classList.remove("border-red-300");
+        }
+      });
+
+      // Limpiar clases de error al escribir
+      [nameInput, emailInput, phoneInput, messageInput].forEach((input) => {
+        input?.addEventListener("input", () => {
+          input.classList.remove("border-red-300");
+          input.setCustomValidity("");
+        });
+      });
+
+      // Prevenir cualquier envío del formulario por defecto
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      };
+
+      // Función principal para manejar el envío del formulario
+      const handleSubmit = async (event) => {
+        console.log("=== handleSubmit INICIADO ===");
+        
+        // Prevenir cualquier comportamiento por defecto
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        
+        // Asegurar que el elemento de estado esté visible
+        if (statusBox) {
+          statusBox.removeAttribute("style"); // Eliminar estilos inline
+          statusBox.style.display = "block";
+          statusBox.style.visibility = "visible";
+          statusBox.classList.remove("hidden");
+          console.log("Status box hecho visible");
+          console.log("Status box display:", window.getComputedStyle(statusBox).display);
+        } else {
+          console.error("Status box no encontrado!");
+        }
+        
+        // Validación HTML5 nativa
+        const isValid = form.checkValidity();
+        console.log("Validación HTML5:", isValid);
+        
+        if (!isValid) {
+          console.log("Formulario inválido, mostrando errores");
+          // Mostrar errores nativos del navegador
+          form.reportValidity();
+          // También mostrar nuestro mensaje personalizado
+          showStatus("Por favor, completa todos los campos correctamente. Revisa los mensajes de error en rojo.", "error");
+          return;
+        }
+        
+        console.log("Validación HTML5 pasada, continuando...");
+
+        // Validaciones adicionales
+        const formData = new FormData(form);
+        const name = formData.get("name")?.toString().trim() || "";
+        const email = formData.get("email")?.toString().trim() || "";
+        const phone = formData.get("phone")?.toString().trim() || "";
+        const message = formData.get("message")?.toString().trim() || "";
+
+        if (name.length < 2) {
+          showStatus("El nombre debe tener al menos 2 caracteres.", "error");
+          nameInput?.focus();
+          return;
+        }
+
+        if (!isValidEmail(email)) {
+          showStatus("Por favor, ingresa un correo electrónico válido.", "error");
+          emailInput?.focus();
+          return;
+        }
+
+        if (!isValidPhone(phone)) {
+          showStatus("Por favor, ingresa un teléfono válido (ej: +56 9 1234 5678).", "error");
+          phoneInput?.focus();
+          return;
+        }
+
+        if (message.length < 10) {
+          showStatus("El mensaje debe tener al menos 10 caracteres.", "error");
+          messageInput?.focus();
+          return;
+        }
+
+        // Guardar datos para posibles reintentos
+        lastFormData = { name, email, phone, message };
+        
+        // Deshabilitar formulario durante el envío
+        toggleDisabled(form, true);
+        const originalButtonText = submitButton?.textContent || "Enviar mensaje";
+        if (submitButton) {
+          submitButton.textContent = "Enviando...";
+          submitButton.setAttribute("aria-busy", "true");
+        }
+        
+        // Mostrar modal de envío
+        showModalSending();
+
+        // Función para enviar con reintentos
+        const sendWithRetry = async (retryCount = 0, maxRetries = 3) => {
+          try {
+            // Preparar datos para el endpoint API
+            const payload = {
+              name: name,
+              email: email,
+              phone: phone,
+              message: message,
+            };
+
+            console.log(`📤 Enviando formulario a API (intento ${retryCount + 1}/${maxRetries + 1}):`, payload);
+            console.log("📍 Endpoint:", apiEndpoint);
+
+            console.log("🔄 Iniciando fetch a:", apiEndpoint);
+            console.log("📦 Payload a enviar:", JSON.stringify(payload, null, 2));
+            
+            let response;
+            try {
+              response = await fetch(apiEndpoint, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+              });
+              
+              console.log("📥 Respuesta recibida:", {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url
+              });
+            } catch (fetchError) {
+              console.error("❌ Error de red al hacer fetch:", fetchError);
+              throw new Error("Error de conexión. Por favor, verifica tu conexión a internet e intenta nuevamente.");
+            }
+
+            if (!response.ok) {
+              let errorText = "";
+              try {
+                errorText = await response.text();
+                console.error("❌ Error en respuesta:", errorText);
+              } catch (e) {
+                console.error("❌ No se pudo leer el error de la respuesta");
+              }
+              throw new Error(`Error ${response.status}: ${response.statusText || "Error del servidor"}`);
+            }
+
+            let result;
+            try {
+              result = await response.json();
+              console.log("📋 Resultado parseado:", result);
+            } catch (parseError) {
+              console.error("❌ Error al parsear respuesta:", parseError);
+              throw new Error("Error al procesar la respuesta del servidor.");
+            }
+
+            if (!response.ok || !result.success) {
+              throw new Error(
+                result.message || "No se pudo enviar tu mensaje. Por favor, intenta nuevamente."
+              );
+            }
+
+            console.log("✅ Formulario enviado exitosamente:", result);
+
+            // Mostrar modal de éxito
+            showModalSuccess();
+          
+            // Limpiar el formulario
+            form.reset();
+            
+            // Habilitar formulario
+            toggleDisabled(form, false);
+            if (submitButton) {
+              submitButton.textContent = originalButtonText;
+              submitButton.removeAttribute("aria-busy");
+            }
+            
+          } catch (error) {
+            console.error(`❌ Error al enviar el formulario (intento ${retryCount + 1}):`, error);
+            
+            // Si aún hay reintentos disponibles, reintentar
+            if (retryCount < maxRetries) {
+              console.log(`🔄 Reintentando en 1 segundo... (${retryCount + 1}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              return sendWithRetry(retryCount + 1, maxRetries);
+            }
+            
+            // Si se agotaron los reintentos, mostrar error
+            const errorMessage = error instanceof Error
+              ? error.message
+              : "No se pudo enviar tu mensaje después de varios intentos. Por favor, intenta nuevamente más tarde o contáctanos directamente.";
+            
+            showModalError(errorMessage);
+            
+            // Habilitar formulario
+            toggleDisabled(form, false);
+            if (submitButton) {
+              submitButton.textContent = originalButtonText;
+              submitButton.removeAttribute("aria-busy");
+            }
+          }
+        };
+        
+        // Configurar botón de reintentar
+        if (retryButton) {
+          retryButton.onclick = () => {
+            hideModal();
+            if (lastFormData) {
+              // Restaurar datos del formulario
+              form.querySelector('[name="name"]').value = lastFormData.name;
+              form.querySelector('[name="email"]').value = lastFormData.email;
+              form.querySelector('[name="phone"]').value = lastFormData.phone;
+              form.querySelector('[name="message"]').value = lastFormData.message;
+              // Reintentar envío
+              handleSubmit(event);
+            }
+          };
+        }
+        
+        // Iniciar envío con reintentos
+        await sendWithRetry();
+      };
+      
+      // Exponer handleSubmit globalmente ANTES de registrar listeners
+      window.handleContactSubmit = handleSubmit;
+      console.log("✅ handleSubmit expuesto globalmente como window.handleContactSubmit");
+      
+      // Manejo del clic del botón - método directo y simple
+      console.log("🔧 Registrando event listener del botón...");
+      
+      if (submitButton) {
+        // Limpiar cualquier listener anterior
+        const newButton = submitButton.cloneNode(true);
+        submitButton.parentNode?.replaceChild(newButton, submitButton);
+        const currentButton = document.getElementById("submit-contact-btn");
+        
+        if (!currentButton) {
+          console.error("❌ ERROR: No se pudo clonar el botón correctamente");
+          return;
+        }
+        
+        // Usar onclick directamente para máxima prioridad
+        currentButton.onclick = function(event) {
+          console.log("=== 🎯 BOTÓN CLICKEADO (onclick handler) ===");
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+          console.log("Ejecutando handleSubmit...");
+          if (typeof handleSubmit === 'function') {
+            handleSubmit(event || new Event('click'));
+          } else {
+            console.error("❌ handleSubmit no es una función!");
+          }
+          return false;
+        };
+        
+        // También agregar addEventListener como backup
+        currentButton.addEventListener("click", function(event) {
+          console.log("=== 🎯 BOTÓN CLICKEADO (addEventListener) ===");
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+          if (typeof handleSubmit === 'function') {
+            handleSubmit(event || new Event('click'));
+          }
+          return false;
+        }, { capture: true, once: false });
+        
+        console.log("✅ Event listeners del botón registrados correctamente");
+        console.log("Botón type:", currentButton.type);
+        console.log("Botón disabled:", currentButton.disabled);
+        console.log("Botón onclick:", typeof currentButton.onclick);
+        
+        // Verificar que el botón no esté deshabilitado
+        if (currentButton.disabled) {
+          console.warn("⚠️ ADVERTENCIA: El botón está deshabilitado!");
+          currentButton.disabled = false;
+          console.log("Botón habilitado manualmente");
+        }
+      } else {
+        console.error("❌ ERROR: No se encontró el botón submit-contact-btn");
+        console.error("Elementos disponibles:", {
+          form: !!form,
+          statusBox: !!statusBox,
+          submitButton: !!submitButton
+        });
+      }
+      
+      console.log("=== ✅ INICIALIZACIÓN COMPLETA ===");
+
+      // Backup: también prevenir submit del formulario
+      form.onsubmit = function(event) {
+        console.log("=== FORM SUBMIT DETECTADO ===");
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        if (typeof handleSubmit === 'function') {
+          handleSubmit(event || new Event('submit'));
+        }
+        return false;
+      };
+    }
+  </script>
 </Layout>
-
-<style>
-  /* Estilos para campos con error */
-  input:invalid:not(:focus):not(:placeholder-shown),
-  textarea:invalid:not(:focus):not(:placeholder-shown) {
-    border-color: #ef4444;
-  }
-
-  /* Animación suave para el estado del formulario */
-  #form-status {
-    transition: all 0.3s ease-in-out;
-  }
-
-  /* Mejora de accesibilidad */
-  button:focus-visible {
-    outline: 2px solid #14b8a6;
-    outline-offset: 2px;
-  }
-</style>

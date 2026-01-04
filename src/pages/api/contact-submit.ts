@@ -1,13 +1,15 @@
 import type { APIRoute } from "astro";
-import { Resend } from "resend";
+import { TransactionalEmailsApi, SendSmtpEmail } from "@getbrevo/brevo";
 
 const recaptchaSecret = import.meta.env.RECAPTCHA_SECRET_KEY;
-const resendApiKey = import.meta.env.RESEND_API_KEY;
+const brevoApiKey = import.meta.env.BREVO_API_KEY;
 
 const CONTACT_REQUIRED_FIELDS = ["name", "email", "message", "phone"] as const;
 const CONSIGNMENT_REQUIRED_FIELDS = ["name", "email", "phone", "carBrand", "carModel", "carYear", "carMileage"] as const;
-const RECIPIENTS = ["roco.solange@automotiveconsulting.cl", "maravena@eserp.cl"];
+const CONTACT_RECIPIENT = "roco.solange@automotiveconsulting.cl";
+const CONTACT_BCC = "contacto@venpu.cl";
 const FROM_ADDRESS = "Automotive Consulting <noreply@automotiveconsulting.cl>";
+const FROM_EMAIL = "noreply@automotiveconsulting.cl";
 
 const isValidEmail = (value: unknown): value is string =>
   typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -41,9 +43,74 @@ const buildHtml = (data: Record<string, string>) => {
   `;
 };
 
+const buildConfirmationHtml = (name: string, data: Record<string, string>) => {
+  const isConsignation = data.formType === "consignacion";
+  const formType = isConsignation ? "consignación" : "contacto";
+  
+  let detailsHtml = "";
+  if (isConsignation) {
+    detailsHtml = `
+      <tr><td style="padding:8px;font-weight:600;">Marca:</td><td style="padding:8px;">${data.carBrand || "N/A"}</td></tr>
+      <tr><td style="padding:8px;font-weight:600;">Modelo:</td><td style="padding:8px;">${data.carModel || "N/A"}</td></tr>
+      <tr><td style="padding:8px;font-weight:600;">Año:</td><td style="padding:8px;">${data.carYear || "N/A"}</td></tr>
+      <tr><td style="padding:8px;font-weight:600;">Kilometraje:</td><td style="padding:8px;">${data.carMileage || "N/A"} km</td></tr>
+    `;
+  } else {
+    detailsHtml = `
+      <tr><td style="padding:8px;font-weight:600;">Mensaje:</td><td style="padding:8px;">${data.message || "N/A"}</td></tr>
+    `;
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background-color: #0f766e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px;">Automotive Consulting</h1>
+      </div>
+      <div style="background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <h2 style="color: #0f766e; margin-top: 0;">¡Hola ${name}!</h2>
+        <p>Gracias por completar nuestro formulario de ${formType}. Hemos recibido tu solicitud correctamente.</p>
+        
+        <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+          <h3 style="color: #0f766e; margin-top: 0;">Resumen de tu solicitud:</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding:8px;font-weight:600;">Nombre:</td><td style="padding:8px;">${data.name || "N/A"}</td></tr>
+            <tr><td style="padding:8px;font-weight:600;">Email:</td><td style="padding:8px;">${data.email || "N/A"}</td></tr>
+            <tr><td style="padding:8px;font-weight:600;">Teléfono:</td><td style="padding:8px;">${data.phone || "N/A"}</td></tr>
+            ${detailsHtml}
+          </table>
+        </div>
+        
+        <p><strong>¿Qué sigue ahora?</strong></p>
+        <ul style="padding-left: 20px;">
+          <li>Revisaremos tu solicitud y te contactaremos en menos de 24 horas hábiles.</li>
+          <li>Uno de nuestros especialistas se pondrá en contacto contigo para coordinar los siguientes pasos.</li>
+          <li>Te acompañaremos durante todo el proceso.</li>
+        </ul>
+        
+        <p>Si necesitas una respuesta urgente, puedes contactarnos directamente:</p>
+        <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+          <p style="margin: 5px 0;"><strong>Teléfono:</strong> <a href="tel:+56976225094" style="color: #0f766e;">+56 9 7622 5094</a></p>
+          <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:roco.solange@automotiveconsulting.cl" style="color: #0f766e;">roco.solange@automotiveconsulting.cl</a></p>
+        </div>
+        
+        <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+          Este es un correo automático, por favor no respondas directamente a este mensaje.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export const POST: APIRoute = async ({ request }) => {
-  if (!recaptchaSecret || !resendApiKey) {
-    console.error("Faltan variables de entorno RECAPTCHA_SECRET_KEY o RESEND_API_KEY.");
+  if (!recaptchaSecret || !brevoApiKey) {
+    console.error("Faltan variables de entorno RECAPTCHA_SECRET_KEY o BREVO_API_KEY.");
     return new Response(
       JSON.stringify({ success: false, message: "Configuración del servidor incompleta." }),
       { status: 500, headers: { "Content-Type": "application/json" } },
